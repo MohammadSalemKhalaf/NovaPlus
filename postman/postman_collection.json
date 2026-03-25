@@ -1,0 +1,413 @@
+{
+  "info": {
+    "_postman_id": "b2d9b84b-0f2d-4f10-8a4b-9a0b0c2db1a0",
+    "name": "NovaPlus Phase 1 - Admin API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Phase 1 Admin APIs (Auth + Tenant Core). Base URL: {{base_url}}"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@novaplus.test\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "auth", "login"]
+            },
+            "description": "POST /api/v1/admin/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "if (json && json.success && json.data && json.data.token) {",
+                  "  pm.environment.set('token', json.data.token);",
+                  "}",
+                  "if (json && json.success && json.data && json.data.tenants && json.data.tenants.length > 0) {",
+                  "  pm.environment.set('tenant_id', String(json.data.tenants[0].id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 Login successful",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": { "raw": "{{base_url}}/admin/auth/login" },
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@novaplus.test\",\n  \"password\": \"password123\"\n}" }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful.\",\n  \"data\": {\n    \"token\": \"1|plain-text-sanctum-token\",\n    \"user\": {\n      \"id\": 1,\n      \"name\": \"Test Admin\",\n      \"email\": \"admin@novaplus.test\"\n    },\n    \"tenants\": [\n      {\n        \"id\": 10,\n        \"name\": \"NovaPlus Demo\",\n        \"slug\": \"novaplus-demo\",\n        \"role\": \"owner\"\n      }\n    ]\n  },\n  \"meta\": {}\n}"
+            },
+            {
+              "name": "422 Validation failed",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": { "raw": "{{base_url}}/admin/auth/login" },
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"\",\n  \"password\": \"\"\n}" }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Validation failed.\",\n  \"errors\": {\n    \"email\": [\"The email field is required.\"],\n    \"password\": [\"The password field is required.\"]\n  }\n}"
+            },
+            {
+              "name": "401 Invalid credentials",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": { "raw": "{{base_url}}/admin/auth/login" },
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@novaplus.test\",\n  \"password\": \"wrong-password\"\n}" }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Invalid credentials.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "auth", "me"]
+            },
+            "description": "GET /api/v1/admin/auth/me"
+          },
+          "response": [
+            {
+              "name": "200 Me successful",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/admin/auth/me" }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User fetched successfully.\",\n  \"data\": {\n    \"user\": {\n      \"id\": 1,\n      \"name\": \"Test Admin\",\n      \"email\": \"admin@novaplus.test\"\n    },\n    \"tenants\": [\n      {\n        \"id\": 10,\n        \"name\": \"NovaPlus Demo\",\n        \"slug\": \"novaplus-demo\",\n        \"role\": \"owner\"\n      }\n    ]\n  },\n  \"meta\": {}\n}"
+            },
+            {
+              "name": "401 Unauthenticated",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Accept", "value": "application/json" }],
+                "url": { "raw": "{{base_url}}/admin/auth/me" }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"message\": \"Unauthenticated.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "auth", "logout"]
+            },
+            "description": "POST /api/v1/admin/auth/logout"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.environment.unset('token');"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 Logout successful",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/admin/auth/logout" }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Logout successful.\",\n  \"data\": {},\n  \"meta\": {}\n}"
+            },
+            {
+              "name": "401 Unauthenticated",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Accept", "value": "application/json" }],
+                "url": { "raw": "{{base_url}}/admin/auth/logout" }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"message\": \"Unauthenticated.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tenant",
+      "item": [
+        {
+          "name": "Create Tenant",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fresh Market\",\n  \"slug\": \"Fresh Market\",\n  \"business_mode\": \"product\",\n  \"primary_language\": \"en\",\n  \"currency_code\": \"USD\",\n  \"timezone\": \"Asia/Hebron\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/tenants",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "tenants"]
+            },
+            "description": "POST /api/v1/admin/tenants"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "var json = pm.response.json();",
+                  "if (json && json.success && json.data && json.data.tenant && json.data.tenant.id) {",
+                  "  pm.environment.set('tenant_id', String(json.data.tenant.id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "201 Tenant created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": { "raw": "{{base_url}}/admin/tenants" },
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Fresh Market\",\n  \"slug\": \"Fresh Market\",\n  \"business_mode\": \"product\",\n  \"primary_language\": \"en\",\n  \"currency_code\": \"USD\",\n  \"timezone\": \"Asia/Hebron\"\n}" }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Tenant created successfully.\",\n  \"data\": {\n    \"tenant\": {\n      \"id\": 10,\n      \"name\": \"Fresh Market\",\n      \"slug\": \"fresh-market\",\n      \"role\": \"owner\"\n    }\n  },\n  \"meta\": {}\n}"
+            },
+            {
+              "name": "422 Validation failed",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": { "raw": "{{base_url}}/admin/tenants" },
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"\",\n  \"slug\": \"\",\n  \"business_mode\": \"invalid\",\n  \"primary_language\": \"\",\n  \"currency_code\": \"\",\n  \"timezone\": \"\"\n}" }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Validation failed.\",\n  \"errors\": {\n    \"name\": [\"The name field is required.\"],\n    \"slug\": [\"The slug field is required.\"],\n    \"business_mode\": [\"The selected business mode is invalid.\"],\n    \"primary_language\": [\"The primary language field is required.\"],\n    \"currency_code\": [\"The currency code field is required.\"],\n    \"timezone\": [\"The timezone field is required.\"]\n  }\n}"
+            },
+            {
+              "name": "401 Unauthenticated",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": { "raw": "{{base_url}}/admin/tenants" }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"message\": \"Unauthenticated.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Current Tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/tenants/current",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "tenants", "current"]
+            },
+            "description": "GET /api/v1/admin/tenants/current (requires X-Tenant-ID + membership)"
+          },
+          "response": [
+            {
+              "name": "200 Current tenant",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+                ],
+                "url": { "raw": "{{base_url}}/admin/tenants/current" }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Tenant fetched successfully.\",\n  \"data\": {\n    \"tenant\": {\n      \"id\": 10,\n      \"name\": \"Fresh Market\",\n      \"slug\": \"fresh-market\",\n      \"business_mode\": \"product\",\n      \"primary_language\": \"en\",\n      \"currency_code\": \"USD\",\n      \"timezone\": \"Asia/Hebron\",\n      \"onboarding_completed_at\": null\n    }\n  },\n  \"meta\": {}\n}"
+            },
+            {
+              "name": "422 Missing X-Tenant-ID",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{base_url}}/admin/tenants/current" }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Tenant context is required.\",\n  \"errors\": {\n    \"X-Tenant-ID\": [\"The X-Tenant-ID header is required.\"]\n  }\n}"
+            },
+            {
+              "name": "422 Invalid X-Tenant-ID (non-integer)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant-ID", "value": "abc" }
+                ],
+                "url": { "raw": "{{base_url}}/admin/tenants/current" }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Validation failed.\",\n  \"errors\": {\n    \"X-Tenant-ID\": [\"The X-Tenant-ID header must be a valid integer.\"]\n  }\n}"
+            },
+            {
+              "name": "404 Tenant not found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant-ID", "value": "999999" }
+                ],
+                "url": { "raw": "{{base_url}}/admin/tenants/current" }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Tenant not found.\"\n}"
+            },
+            {
+              "name": "403 Not authorized for tenant",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant-ID", "value": "10" }
+                ],
+                "url": { "raw": "{{base_url}}/admin/tenants/current" }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"You are not authorized to access this resource.\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

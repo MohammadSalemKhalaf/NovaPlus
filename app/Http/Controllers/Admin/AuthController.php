@@ -1,0 +1,109 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\LoginRequest;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+
+class AuthController extends Controller
+{
+    public function login(LoginRequest $request): JsonResponse
+    {
+        $credentials = $request->validated();
+
+        $user = User::query()
+            ->where('email', $credentials['email'])
+            ->first();
+
+        if ($user === null || !Hash::check($credentials['password'], $user->password_hash)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid credentials.',
+            ], 401);
+        }
+
+        $token = $user->createToken('admin')->plainTextToken;
+
+        $tenants = $user->tenantUsers()
+            ->with('tenant:id,name,slug')
+            ->get()
+            ->map(function ($membership) {
+                return [
+                    'id' => $membership->tenant->id,
+                    'name' => $membership->tenant->name,
+                    'slug' => $membership->tenant->slug,
+                    'role' => $membership->role,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login successful.',
+            'data' => [
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ],
+                'tenants' => $tenants,
+            ],
+            'meta' => (object) [],
+        ]);
+    }
+
+    public function me(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $tenants = $user->tenantUsers()
+            ->with('tenant:id,name,slug')
+            ->get()
+            ->map(function ($membership) {
+                return [
+                    'id' => $membership->tenant->id,
+                    'name' => $membership->tenant->name,
+                    'slug' => $membership->tenant->slug,
+                    'role' => $membership->role,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User fetched successfully.',
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ],
+                'tenants' => $tenants,
+            ],
+            'meta' => (object) [],
+        ]);
+    }
+
+    public function logout(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user !== null && $request->user()->currentAccessToken() !== null) {
+            $request->user()->currentAccessToken()->delete();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logout successful.',
+            'data' => (object) [],
+            'meta' => (object) [],
+        ]);
+    }
+}
+
