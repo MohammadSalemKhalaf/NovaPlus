@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LoginRequest;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,46 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'Invalid credentials.',
             ], 401);
+        }
+
+        if ($user->status !== 'active') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Account not activated. Please activate your subscription.',
+                'data' => (object) [],
+                'meta' => (object) [],
+            ], 200);
+        }
+
+        $activeTenantMemberships = $user->tenantUsers()
+            ->with('tenant:id,status')
+            ->where('status', 'active')
+            ->get();
+
+        if ($activeTenantMemberships->isNotEmpty()) {
+            $tenantIds = $activeTenantMemberships
+                ->pluck('tenant.id')
+                ->filter()
+                ->map(fn ($id) => (int) $id)
+                ->values();
+
+            $hasActiveTenantAndSubscription = $tenantIds->isNotEmpty()
+                && $activeTenantMemberships->contains(fn ($membership) => $membership->tenant?->status === 'active')
+                && Subscription::query()
+                    ->whereIn('tenant_id', $tenantIds->all())
+                    ->where('status', 'active')
+                    ->where('starts_at', '<=', now())
+                    ->where('ends_at', '>', now())
+                    ->exists();
+
+            if (!$hasActiveTenantAndSubscription) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Account not activated. Please activate your subscription.',
+                    'data' => (object) [],
+                    'meta' => (object) [],
+                ], 200);
+            }
         }
 
         $token = $user->createToken('admin')->plainTextToken;

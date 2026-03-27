@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Subscription extends Model
+class SubscriptionCode extends Model
 {
     use HasFactory;
 
@@ -14,34 +14,22 @@ class Subscription extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'tenant_id',
-        'plan_code',
         'code',
-        'activation_channel',
-        'status',
-        'starts_at',
-        'ends_at',
-        'billing_cycle',
+        'duration_months',
+        'note',
         'created_by_admin_id',
         'sold_by_user_id',
         'redeemed_at',
-        'activated_by_user_id',
-        'activation_code',
+        'redeemed_by_subscription_id',
+        'status',
     ];
 
     protected function casts(): array
     {
         return [
-            'starts_at' => 'datetime',
-            'ends_at' => 'datetime',
             'redeemed_at' => 'datetime',
             'status' => 'string',
         ];
-    }
-
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(Tenant::class, 'tenant_id');
     }
 
     public function createdByAdmin(): BelongsTo
@@ -54,9 +42,16 @@ class Subscription extends Model
         return $this->belongsTo(User::class, 'sold_by_user_id');
     }
 
-    public function activatedByUser(): BelongsTo
+    public function redeemedBySubscription(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'activated_by_user_id');
+        return $this->belongsTo(Subscription::class, 'redeemed_by_subscription_id');
+    }
+
+    /**
+     * Scope to get active codes
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active')->whereNull('redeemed_at');
     }
 }
-

@@ -5,9 +5,12 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ItemController;
 use App\Http\Controllers\Admin\ItemImageController;
 use App\Http\Controllers\Admin\ItemPriceController;
+use App\Http\Controllers\Admin\OnboardingController;
+use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\TenantUserController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Public\CatalogController as PublicCatalogController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/admin')->group(function (): void {
@@ -21,8 +24,20 @@ Route::prefix('v1/admin')->group(function (): void {
     });
 
     Route::middleware('auth:sanctum')->group(function (): void {
-        Route::post('users', [UserController::class, 'store']);
-        Route::post('tenants', [TenantController::class, 'store']);
+        Route::middleware('platform.admin')->group(function (): void {
+            Route::post('users', [UserController::class, 'store']);
+            Route::post('tenants', [TenantController::class, 'store']);
+
+            Route::prefix('onboarding')->group(function (): void {
+                Route::post('owner', [OnboardingController::class, 'storeOwner']);
+            });
+
+            Route::prefix('subscriptions')->group(function (): void {
+                Route::post('codes', [SubscriptionController::class, 'storeCode']);
+                Route::post('redeem', [SubscriptionController::class, 'redeem']);
+            });
+        });
+
         Route::post('tenants/{tenant}/users', [TenantUserController::class, 'store']);
 
         Route::middleware(['tenant.resolve', 'tenant.access'])->group(function (): void {
@@ -55,4 +70,8 @@ Route::prefix('v1/admin/catalog')
         Route::put('items/{item}/images/{image}/primary', [ItemImageController::class, 'setPrimary']);
         Route::delete('items/{item}/images/{image}', [ItemImageController::class, 'destroy']);
     });
+
+Route::prefix('v1/public')->group(function (): void {
+    Route::get('catalog/{tenant_slug}', [PublicCatalogController::class, 'show']);
+});
 

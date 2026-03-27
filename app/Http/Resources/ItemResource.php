@@ -49,6 +49,32 @@ class ItemResource extends JsonResource
                     'updated_at' => $this->primaryImage->updated_at,
                 ];
             }),
+            'active_price' => $this->whenLoaded('activePrice', function () {
+                return [
+                    'id' => $this->activePrice->id,
+                    'item_id' => $this->activePrice->item_id,
+                    'currency_code' => $this->activePrice->currency_code,
+                    'base_price_amount' => $this->activePrice->base_price_amount,
+                    'compare_at_price_amount' => $this->activePrice->compare_at_price_amount,
+                    'pricing_status' => $this->activePrice->pricing_status,
+                    'effective_from' => $this->activePrice->effective_from,
+                    'effective_to' => $this->activePrice->effective_to,
+                ];
+            }),
+            'images' => $this->whenLoaded('itemImages', function () {
+                return $this->itemImages->map(function ($image) {
+                    return [
+                        'id' => $image->id,
+                        'item_id' => $image->item_id,
+                        'storage_path' => $image->storage_path,
+                        'alt_text' => $image->alt_text,
+                        'sort_order' => $image->sort_order,
+                        'is_primary' => $image->is_primary,
+                        'created_at' => $image->created_at,
+                        'updated_at' => $image->updated_at,
+                    ];
+                })->values();
+            }),
         ];
     }
 }

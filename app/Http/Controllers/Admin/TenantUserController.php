@@ -45,6 +45,39 @@ class TenantUserController extends Controller
             ], 422);
         }
 
+        if ($payload['role'] === 'owner') {
+            $tenantHasOwner = TenantUser::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('role', 'owner')
+                ->exists();
+
+            if ($tenantHasOwner) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed.',
+                    'errors' => [
+                        'role' => ['This tenant already has an owner.'],
+                    ],
+                ], 422);
+            }
+
+            $userOwnsAnotherTenant = TenantUser::query()
+                ->where('user_id', $payload['user_id'])
+                ->where('role', 'owner')
+                ->where('tenant_id', '!=', $tenant->id)
+                ->exists();
+
+            if ($userOwnsAnotherTenant) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed.',
+                    'errors' => [
+                        'user_id' => ['This user already owns another tenant.'],
+                    ],
+                ], 422);
+            }
+        }
+
         $tenantUser = TenantUser::query()->create([
             'tenant_id' => $tenant->id,
             'user_id' => $payload['user_id'],

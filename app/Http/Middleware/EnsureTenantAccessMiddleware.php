@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Subscription;
 use App\Models\Tenant;
 use Closure;
 use Illuminate\Http\Request;
@@ -18,6 +19,13 @@ class EnsureTenantAccessMiddleware
                 'success' => false,
                 'message' => 'Unauthenticated.',
             ], 401);
+        }
+
+        if ($user->status !== 'active') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tenant subscription inactive or expired',
+            ], 403);
         }
 
         /** @var Tenant|null $tenant */
@@ -39,6 +47,22 @@ class EnsureTenantAccessMiddleware
             return response()->json([
                 'success' => false,
                 'message' => 'You are not authorized to access this resource.',
+            ], 403);
+        }
+
+        $tenantIsActive = $tenant->status === 'active';
+
+        $hasActiveSubscription = Subscription::query()
+            ->where('tenant_id', $tenant->getKey())
+            ->where('status', 'active')
+            ->where('starts_at', '<=', now())
+            ->where('ends_at', '>', now())
+            ->exists();
+
+        if (!$tenantIsActive || !$hasActiveSubscription) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tenant subscription inactive or expired',
             ], 403);
         }
 

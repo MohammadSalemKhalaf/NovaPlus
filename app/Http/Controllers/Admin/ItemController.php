@@ -89,6 +89,23 @@ class ItemController extends Controller
                             'updated_at',
                         ]);
                 },
+                'activePrice' => function ($query) use ($tenantId): void {
+                    $query
+                        ->where('tenant_id', $tenantId)
+                        ->select([
+                            'id',
+                            'tenant_id',
+                            'item_id',
+                            'currency_code',
+                            'base_price_amount',
+                            'compare_at_price_amount',
+                            'pricing_status',
+                            'effective_from',
+                            'effective_to',
+                            'created_at',
+                            'updated_at',
+                        ]);
+                },
             ])
             ->orderBy('sort_order')
             ->orderByDesc('id')
@@ -233,6 +250,23 @@ class ItemController extends Controller
                             'alt_text',
                             'sort_order',
                             'is_primary',
+                            'created_at',
+                            'updated_at',
+                        ]);
+                },
+                'activePrice' => function ($query) use ($tenantId): void {
+                    $query
+                        ->where('tenant_id', $tenantId)
+                        ->select([
+                            'id',
+                            'tenant_id',
+                            'item_id',
+                            'currency_code',
+                            'base_price_amount',
+                            'compare_at_price_amount',
+                            'pricing_status',
+                            'effective_from',
+                            'effective_to',
                             'created_at',
                             'updated_at',
                         ]);

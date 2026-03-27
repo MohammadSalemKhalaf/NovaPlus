@@ -53,13 +53,13 @@ class ItemStoreRequest extends FormRequest
 
     private function tenantId(): ?int
     {
-        $tenant = $this->request->attributes->get('tenant');
+        $tenant = request()->attributes->get('tenant');
 
         if (is_object($tenant) && method_exists($tenant, 'getKey')) {
             return (int) $tenant->getKey();
         }
 
-        $tenantId = $this->request->attributes->get('tenant_id');
+        $tenantId = request()->attributes->get('tenant_id');
 
         return is_numeric($tenantId) ? (int) $tenantId : null;
     }

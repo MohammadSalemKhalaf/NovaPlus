@@ -12,7 +12,7 @@ class DevAuthTenantSeeder extends Seeder
 {
     public function run(): void
     {
-        $user = User::query()->updateOrCreate(
+        $admin = User::query()->updateOrCreate(
             ['email' => 'admin@novaplus.test'],
             [
                 'name' => 'Test Admin',
@@ -23,10 +23,21 @@ class DevAuthTenantSeeder extends Seeder
             ],
         );
 
+        $owner = User::query()->updateOrCreate(
+            ['email' => 'owner@novaplus.test'],
+            [
+                'name' => 'Demo Owner',
+                'password_hash' => Hash::make('password123'),
+                'status' => 'active',
+                'last_login_at' => null,
+                'email_verified_at' => now(),
+            ],
+        );
+
         $tenant = Tenant::query()->updateOrCreate(
             ['slug' => 'novaplus-demo'],
             [
-                'owner_user_id' => $user->id,
+                'owner_user_id' => $owner->id,
                 'name' => 'NovaPlus Demo',
                 'business_mode' => 'product',
                 'status' => 'active',
@@ -37,15 +48,20 @@ class DevAuthTenantSeeder extends Seeder
             ],
         );
 
-        if ((int) $tenant->owner_user_id !== (int) $user->id) {
-            $tenant->owner_user_id = $user->id;
+        if ((int) $tenant->owner_user_id !== (int) $owner->id) {
+            $tenant->owner_user_id = $owner->id;
             $tenant->save();
         }
+
+        TenantUser::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $admin->id)
+            ->delete();
 
         TenantUser::query()->updateOrCreate(
             [
                 'tenant_id' => $tenant->id,
-                'user_id' => $user->id,
+                'user_id' => $owner->id,
             ],
             [
                 'role' => 'owner',

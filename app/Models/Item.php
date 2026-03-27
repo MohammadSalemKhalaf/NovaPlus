@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Item extends Model
@@ -58,6 +59,13 @@ class Item extends Model
     public function itemPrices(): HasMany
     {
         return $this->hasMany(ItemPrice::class, 'item_id');
+    }
+
+    public function activePrice(): HasOne
+    {
+        return $this->hasOne(ItemPrice::class, 'item_id')
+            ->where('pricing_status', 'active')
+            ->latestOfMany('id');
     }
 
     public function itemImages(): HasMany

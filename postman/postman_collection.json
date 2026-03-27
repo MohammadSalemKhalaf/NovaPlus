@@ -3,19 +3,19 @@
     "_postman_id": "b2d9b84b-0f2d-4f10-8a4b-9a0b0c2db1a0",
     "name": "NovaPlus Phase 1 - Admin API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Phase 1 Admin APIs (Auth, Tenant, Catalog, Item Prices, Item Images). Base URL: {{base_url}}"
+    "description": "Clean flow: Auth, Admin Flow, Owner Flow"
   },
   "item": [
     {
       "name": "Auth",
       "item": [
         {
-          "name": "Login",
+          "name": "Admin Login",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Accept", "value": "application/json", "type": "text" },
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -36,316 +36,8 @@
                 "exec": [
                   "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
-                  "pm.test('Success flag is true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data structure valid', function () {",
-                  "  pm.expect(json).to.have.property('data');",
-                  "  pm.expect(json.data).to.have.property('token');",
-                  "  pm.expect(json.data).to.have.property('user');",
-                  "  pm.expect(json.data).to.have.property('tenants');",
-                  "});",
-                  "pm.environment.set('token', json.data.token);",
-                  "if (json.data.tenants && json.data.tenants.length > 0) { pm.environment.set('tenant_id', String(json.data.tenants[0].id)); }"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Me",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Accept", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/auth/me",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "auth", "me"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success flag is true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data structure valid', function () {",
-                  "  pm.expect(json).to.have.property('data');",
-                  "  pm.expect(json.data).to.have.property('user');",
-                  "  pm.expect(json.data).to.have.property('tenants');",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Logout",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/auth/logout",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "auth", "logout"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success flag is true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data structure valid', function () { pm.expect(json).to.have.property('data'); });",
-                  "pm.environment.unset('token');"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Tenant",
-      "item": [
-        {
-          "name": "Create Tenant",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Fresh Market\",\n  \"slug\": \"fresh-market\",\n  \"business_mode\": \"product\",\n  \"primary_language\": \"en\",\n  \"currency_code\": \"USD\",\n  \"timezone\": \"Asia/Hebron\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/tenants",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "tenants"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success flag is true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data structure valid', function () {",
-                  "  pm.expect(json).to.have.property('data');",
-                  "  pm.expect(json.data).to.have.property('tenant');",
-                  "  pm.expect(json.data.tenant).to.have.property('id');",
-                  "});",
-                  "pm.environment.set('tenant_id', String(json.data.tenant.id));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Current Tenant",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Accept", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}", "type": "text" }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/tenants/current",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "tenants", "current"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success flag is true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data structure valid', function () {",
-                  "  pm.expect(json).to.have.property('data');",
-                  "  pm.expect(json.data).to.have.property('tenant');",
-                  "});"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Users",
-      "item": [
-        {
-          "name": "Create User",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Store Owner\",\n  \"email\": \"owner@test.com\",\n  \"password\": \"password123\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/users",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "users"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success flag is true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data exists', function () { pm.expect(json.data).to.have.property('user'); pm.expect(json.data.user).to.have.property('id'); });",
-                  "pm.environment.set('user_id', String(json.data.user.id));"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Tenant Users",
-      "item": [
-        {
-          "name": "Assign User",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"role\": \"owner\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/tenants/{{tenant_id}}/users",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "tenants", "{{tenant_id}}", "users"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success flag is true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data exists', function () { pm.expect(json.data).to.have.property('tenant_user'); });",
-                  "pm.test('Role assigned', function () { pm.expect(json.data.tenant_user.role).to.eql('owner'); });"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Owner Flow",
-      "item": [
-        {
-          "name": "Create Owner User",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Store Owner\",\n  \"email\": \"owner+{{$timestamp}}@test.com\",\n  \"password\": \"password123\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/users",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "users"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
                   "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data exists', function () { pm.expect(json.data).to.have.property('user'); });",
-                  "pm.environment.set('owner_user_id', String(json.data.user.id));",
-                  "pm.environment.set('owner_email', String(json.data.user.email));",
-                  "pm.environment.set('owner_password', 'password123');"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Assign Owner To Tenant",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"user_id\": \"{{owner_user_id}}\",\n  \"role\": \"owner\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/tenants/{{tenant_id}}/users",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "tenants", "{{tenant_id}}", "users"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Role assigned owner', function () { pm.expect(json.data.tenant_user.role).to.eql('owner'); });"
+                  "pm.environment.set('token', String(json.data.token));"
                 ]
               }
             }
@@ -356,8 +48,8 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Accept", "value": "application/json", "type": "text" },
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -379,16 +71,135 @@
                   "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
                   "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data exists', function () { pm.expect(json.data).to.have.property('token'); pm.expect(json.data).to.have.property('tenants'); });",
                   "pm.environment.set('owner_token', String(json.data.token));",
                   "if (json.data.tenants && json.data.tenants.length > 0) { pm.environment.set('owner_tenant_id', String(json.data.tenants[0].id)); }"
                 ]
               }
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Admin Flow",
+      "item": [
+        {
+          "name": "Onboard Owner",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner_name\": \"Owner {{$timestamp}}\",\n  \"owner_email\": \"owner{{$timestamp}}@novaplus.test\",\n  \"password\": \"OwnerPass123!\",\n  \"tenant_name\": \"Store {{$timestamp}}\",\n  \"tenant_slug\": \"store-{{$timestamp}}\",\n  \"business_mode\": \"product\",\n  \"activation_channel\": \"email\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/onboarding/owner",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "onboarding", "owner"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.environment.set('owner_user_id', String(json.data.owner_user_id));",
+                  "pm.environment.set('tenant_id', String(json.data.tenant_id));",
+                  "pm.environment.set('owner_tenant_id', String(json.data.tenant_id));",
+                  "pm.environment.set('owner_email', String(json.data.email));",
+                  "pm.environment.set('owner_password', 'OwnerPass123!');"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "Owner Create Category",
+          "name": "Create Subscription Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"duration_months\": 12,\n  \"code\": \"SUB-{{$timestamp}}\",\n  \"note\": \"Admin created code\",\n  \"sold_by_user_id\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/subscriptions/codes",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "subscriptions", "codes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.environment.set('subscription_code', String(json.data.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Redeem Subscription Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{subscription_code}}\",\n  \"tenant_id\": {{tenant_id}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/subscriptions/redeem",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "subscriptions", "redeem"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('Subscription active', function () { pm.expect(json.data.status).to.eql('active'); });",
+                  "pm.environment.set('subscription_id', String(json.data.subscription_id));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Owner Flow",
+      "item": [
+        {
+          "name": "Create Category (Optional)",
           "request": {
             "method": "POST",
             "header": [
@@ -399,7 +210,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"parent_id\": null,\n  \"name\": \"Owner Beverages {{$timestamp}}\",\n  \"slug\": \"owner-beverages-{{$timestamp}}\",\n  \"description\": \"Owner category\",\n  \"sort_order\": 1,\n  \"status\": \"active\"\n}",
+              "raw": "{\n  \"parent_id\": null,\n  \"name\": \"Optional Category {{$timestamp}}\",\n  \"slug\": \"optional-category-{{$timestamp}}\",\n  \"description\": \"Optional category\",\n  \"sort_order\": 1,\n  \"status\": \"active\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -416,16 +227,14 @@
                 "exec": [
                   "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
                   "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data exists', function () { pm.expect(json.data).to.have.property('category'); });",
-                  "pm.environment.set('owner_category_id', String(json.data.category.id));"
+                  "pm.environment.set('category_id', String(json.data.category.id));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Owner Create Item",
+          "name": "Create Item (Category Nullable)",
           "request": {
             "method": "POST",
             "header": [
@@ -436,7 +245,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"category_id\": \"{{owner_category_id}}\",\n  \"name\": \"Owner Espresso {{$timestamp}}\",\n  \"slug\": \"owner-espresso-{{$timestamp}}\",\n  \"short_description\": \"Owner item\",\n  \"long_description\": \"Owner item long\",\n  \"item_type\": \"product\",\n  \"status\": \"active\",\n  \"visibility\": \"public\",\n  \"primary_image_id\": null,\n  \"sort_order\": 1\n}",
+              "raw": "{\n  \"category_id\": null,\n  \"name\": \"Owner Item {{$timestamp}}\",\n  \"slug\": \"owner-item-{{$timestamp}}\",\n  \"short_description\": \"Simple item\",\n  \"long_description\": \"No category required\",\n  \"item_type\": \"product\",\n  \"status\": \"active\",\n  \"visibility\": \"public\",\n  \"primary_image_id\": null,\n  \"sort_order\": 1\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -453,16 +262,14 @@
                 "exec": [
                   "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
                   "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data exists', function () { pm.expect(json.data).to.have.property('item'); });",
-                  "pm.environment.set('owner_item_id', String(json.data.item.id));"
+                  "pm.environment.set('item_id', String(json.data.item.id));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Owner Set Active Price",
+          "name": "Set Active Price",
           "request": {
             "method": "POST",
             "header": [
@@ -473,13 +280,13 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"currency_code\": \"USD\",\n  \"base_price_amount\": \"19.99\",\n  \"compare_at_price_amount\": \"24.99\",\n  \"effective_from\": \"2026-03-26 10:00:00\",\n  \"effective_to\": null\n}",
+              "raw": "{\n  \"currency_code\": \"USD\",\n  \"base_price_amount\": \"19.99\",\n  \"compare_at_price_amount\": null,\n  \"effective_from\": \"2026-03-27 10:00:00\",\n  \"effective_to\": null\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{owner_item_id}}/prices/active",
+              "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/prices/active",
               "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items", "{{owner_item_id}}", "prices", "active"]
+              "path": ["admin", "catalog", "items", "{{item_id}}", "prices", "active"]
             }
           },
           "event": [
@@ -490,16 +297,14 @@
                 "exec": [
                   "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data exists', function () { pm.expect(json.data).to.have.property('price'); });",
-                  "pm.environment.set('owner_price_id', String(json.data.price.id));"
+                  "pm.environment.set('price_id', String(json.data.price.id));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Owner Upload Image",
+          "name": "Upload Image",
           "request": {
             "method": "POST",
             "header": [
@@ -517,599 +322,24 @@
               ]
             },
             "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{owner_item_id}}/images",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items", "{{owner_item_id}}", "images"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data exists', function () { pm.expect(json.data).to.have.property('image'); });",
-                  "pm.environment.set('owner_image_id', String(json.data.image.id));"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Staff Permission Rules",
-      "item": [
-        {
-          "name": "Create Staff User",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Store Staff\",\n  \"email\": \"staff+{{$timestamp}}@test.com\",\n  \"password\": \"password123\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/users",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "users"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data exists', function () { pm.expect(json.data).to.have.property('user'); });",
-                  "pm.environment.set('staff_user_id', String(json.data.user.id));",
-                  "pm.environment.set('staff_email', String(json.data.user.email));",
-                  "pm.environment.set('staff_password', 'password123');"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Assign Staff To Tenant",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"user_id\": \"{{staff_user_id}}\",\n  \"role\": \"staff\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/tenants/{{tenant_id}}/users",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "tenants", "{{tenant_id}}", "users"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Role assigned staff', function () { pm.expect(json.data.tenant_user.role).to.eql('staff'); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Staff Login",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json", "type": "text" },
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{staff_email}}\",\n  \"password\": \"{{staff_password}}\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "auth", "login"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data exists', function () { pm.expect(json.data).to.have.property('token'); pm.expect(json.data).to.have.property('tenants'); });",
-                  "pm.environment.set('staff_token', String(json.data.token));",
-                  "if (json.data.tenants && json.data.tenants.length > 0) { pm.environment.set('staff_tenant_id', String(json.data.tenants[0].id)); }"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Staff List Categories",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{staff_token}}" },
-              { "key": "X-Tenant-ID", "value": "{{staff_tenant_id}}" }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/categories",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "categories"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Staff Create Category Forbidden",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{staff_token}}" },
-              { "key": "X-Tenant-ID", "value": "{{staff_tenant_id}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"parent_id\": null,\n  \"name\": \"Staff Forbidden {{$timestamp}}\",\n  \"slug\": \"staff-forbidden-{{$timestamp}}\",\n  \"description\": \"should fail\",\n  \"sort_order\": 1,\n  \"status\": \"active\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/categories",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "categories"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 403', function () { pm.response.to.have.status(403); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success false', function () { pm.expect(json.success).to.eql(false); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Staff Set Active Price Forbidden",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{staff_token}}" },
-              { "key": "X-Tenant-ID", "value": "{{staff_tenant_id}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"currency_code\": \"USD\",\n  \"base_price_amount\": \"30.00\",\n  \"compare_at_price_amount\": null,\n  \"effective_from\": \"2026-03-26 10:00:00\",\n  \"effective_to\": null\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{owner_item_id}}/prices/active",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items", "{{owner_item_id}}", "prices", "active"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 403', function () { pm.response.to.have.status(403); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success false', function () { pm.expect(json.success).to.eql(false); });"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Categories",
-      "item": [
-        {
-          "name": "List Categories",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/categories",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "categories"]
-            }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 200', function(){ pm.response.to.have.status(200); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('categories'); pm.expect(json.data).to.have.property('pagination'); });"]}}]
-        },
-        {
-          "name": "Create Category",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"parent_id\": null,\n  \"name\": \"Beverages\",\n  \"slug\": \"beverages\",\n  \"description\": \"All drinks\",\n  \"sort_order\": 1,\n  \"status\": \"active\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/categories",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "categories"]
-            }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 201', function(){ pm.response.to.have.status(201); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('category'); pm.expect(json.data.category).to.have.property('id'); });","pm.environment.set('category_id', String(json.data.category.id));"]}}]
-        },
-        {
-          "name": "Show Category",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/categories/{{category_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "categories", "{{category_id}}"]
-            }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 200', function(){ pm.response.to.have.status(200); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('category'); });"]}}]
-        },
-        {
-          "name": "Update Category",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Hot Beverages\",\n  \"sort_order\": 2\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/categories/{{category_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "categories", "{{category_id}}"]
-            }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 200', function(){ pm.response.to.have.status(200); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('category'); });"]}}]
-        },
-        {
-          "name": "Archive Category",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/categories/{{category_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "categories", "{{category_id}}"]
-            }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 200', function(){ pm.response.to.have.status(200); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('deleted'); pm.expect(json.data.deleted).to.eql(true); });"]}}]
-        }
-      ]
-    },
-    {
-      "name": "Items",
-      "item": [
-        {
-          "name": "List Items",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items"]
-            }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 200', function(){ pm.response.to.have.status(200); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('items'); pm.expect(json.data).to.have.property('pagination'); });"]}}]
-        },
-        {
-          "name": "Create Item",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"category_id\": \"{{category_id}}\",\n  \"name\": \"Espresso\",\n  \"slug\": \"espresso\",\n  \"short_description\": \"Strong coffee shot\",\n  \"long_description\": \"Single origin beans\",\n  \"item_type\": \"product\",\n  \"status\": \"active\",\n  \"visibility\": \"public\",\n  \"primary_image_id\": null,\n  \"sort_order\": 1\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items"]
-            }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 201', function(){ pm.response.to.have.status(201); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('item'); pm.expect(json.data.item).to.have.property('id'); });","pm.environment.set('item_id', String(json.data.item.id));"]}}]
-        },
-        {
-          "name": "Show Item",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{item_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items", "{{item_id}}"]
-            }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 200', function(){ pm.response.to.have.status(200); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('item'); });"]}}]
-        },
-        {
-          "name": "Update Item",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"active\",\n  \"visibility\": \"public\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{item_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items", "{{item_id}}"]
-            }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 200', function(){ pm.response.to.have.status(200); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('item'); });"]}}]
-        },
-        {
-          "name": "Archive Item",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{item_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items", "{{item_id}}"]
-            }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 200', function(){ pm.response.to.have.status(200); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('deleted'); pm.expect(json.data.deleted).to.eql(true); });"]}}]
-        }
-      ]
-    },
-    {
-      "name": "Item Prices",
-      "item": [
-        {
-          "name": "Set Active Price",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"currency_code\": \"USD\",\n  \"base_price_amount\": \"19.99\",\n  \"compare_at_price_amount\": \"24.99\",\n  \"effective_from\": \"2026-03-26 10:00:00\",\n  \"effective_to\": null\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/prices/active",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items", "{{item_id}}", "prices", "active"]
-            }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 200', function(){ pm.response.to.have.status(200); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('price'); pm.expect(json.data.price).to.have.property('id'); });","pm.environment.set('price_id', String(json.data.price.id));"]}}]
-        },
-        {
-          "name": "Create Draft Price",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"currency_code\": \"USD\",\n  \"base_price_amount\": \"21.50\",\n  \"compare_at_price_amount\": null,\n  \"effective_from\": \"2026-04-01 00:00:00\",\n  \"effective_to\": null\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/prices/draft",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items", "{{item_id}}", "prices", "draft"]
-            }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 201', function(){ pm.response.to.have.status(201); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('price'); });"]}}]
-        },
-        {
-          "name": "Update Price",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"base_price_amount\": \"20.00\",\n  \"compare_at_price_amount\": \"23.00\",\n  \"pricing_status\": \"active\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/prices/{{price_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items", "{{item_id}}", "prices", "{{price_id}}"]
-            }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 200', function(){ pm.response.to.have.status(200); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('price'); });"]}}]
-        }
-      ]
-    },
-    {
-      "name": "Item Images",
-      "item": [
-        {
-          "name": "List Images",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
-            ],
-            "url": {
               "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/images",
               "host": ["{{base_url}}"],
               "path": ["admin", "catalog", "items", "{{item_id}}", "images"]
             }
           },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 200', function(){ pm.response.to.have.status(200); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('images'); });"]}}]
-        },
-        {
-          "name": "Upload Image",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                { "key": "image", "type": "file", "src": "" },
-                { "key": "alt_text", "type": "text", "value": "Front image" },
-                { "key": "sort_order", "type": "text", "value": "1" },
-                { "key": "is_primary", "type": "text", "value": "true" }
-              ]
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/images",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items", "{{item_id}}", "images"]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('image_id', String(json.data.image.id));"
+                ]
+              }
             }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 201', function(){ pm.response.to.have.status(201); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('image'); pm.expect(json.data.image).to.have.property('id'); });","pm.environment.set('image_id', String(json.data.image.id));"]}}]
-        },
-        {
-          "name": "Set Primary Image",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/images/{{image_id}}/primary",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items", "{{item_id}}", "images", "{{image_id}}", "primary"]
-            }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 200', function(){ pm.response.to.have.status(200); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('image'); });"]}}]
-        },
-        {
-          "name": "Delete Image",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/images/{{image_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items", "{{item_id}}", "images", "{{image_id}}"]
-            }
-          },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('Status is 200', function(){ pm.response.to.have.status(200); });","const json = pm.response.json();","pm.test('Success flag is true', function(){ pm.expect(json.success).to.eql(true); });","pm.test('Data structure valid', function(){ pm.expect(json.data).to.have.property('deleted'); pm.expect(json.data.deleted).to.eql(true); });"]}}]
+          ]
         }
       ]
     }

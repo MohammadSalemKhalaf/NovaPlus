@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
+            'platform.admin' => App\Http\Middleware\EnsurePlatformAdminMiddleware::class,
             'tenant.resolve' => App\Http\Middleware\ResolveTenantMiddleware::class,
             'tenant.access' => App\Http\Middleware\EnsureTenantAccessMiddleware::class,
         ]);
