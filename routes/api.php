@@ -10,7 +10,11 @@ use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\TenantUserController;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Public\CatalogController as PublicCatalogController;
+use App\Http\Controllers\Public\BusinessTypeController;
+use App\Http\Controllers\Public\CartController;
+use App\Http\Controllers\Public\CatalogController as LegacyPublicCatalogController;
+use App\Http\Controllers\Public\PublicCatalogController;
+use App\Http\Controllers\Public\StoreDiscoveryController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/admin')->group(function (): void {
@@ -72,6 +76,19 @@ Route::prefix('v1/admin/catalog')
     });
 
 Route::prefix('v1/public')->group(function (): void {
-    Route::get('catalog/{tenant_slug}', [PublicCatalogController::class, 'show']);
+    Route::get('business-types', [BusinessTypeController::class, 'index']);
+
+    Route::get('stores', [StoreDiscoveryController::class, 'index']);
+    Route::get('stores/{tenant_slug}', [StoreDiscoveryController::class, 'show']);
+
+    Route::get('catalog/{tenant_slug}/categories', [PublicCatalogController::class, 'categories']);
+    Route::get('catalog/{tenant_slug}/items', [PublicCatalogController::class, 'items']);
+    Route::get('catalog/{tenant_slug}', [LegacyPublicCatalogController::class, 'show']);
+
+    Route::get('cart', [CartController::class, 'show']);
+    Route::post('cart/items', [CartController::class, 'addItem']);
+    Route::delete('cart/items/{item_id}', [CartController::class, 'removeItem']);
+    Route::post('cart/clear', [CartController::class, 'clear']);
+    Route::post('cart/checkout-whatsapp', [CartController::class, 'checkoutWhatsApp']);
 });
 

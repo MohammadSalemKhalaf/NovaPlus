@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Admin;
 
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class OwnerOnboardingRequest extends FormRequest
 {
@@ -28,6 +30,12 @@ class OwnerOnboardingRequest extends FormRequest
             'tenant_name' => ['required', 'string', 'max:255'],
             'tenant_slug' => ['required', 'string', 'max:255', 'unique:tenants,slug', 'regex:/^[a-z0-9-]+$/'],
             'business_mode' => ['required', 'in:product,service'],
+            'business_type_id' => [
+                'required',
+                'integer',
+                Rule::exists('business_types', 'id')->where(fn (Builder $query) => $query->where('status', 'active')),
+            ],
+            'tenant_whatsapp_number' => ['nullable', 'string', 'max:32'],
             'activation_channel' => ['required', 'in:email,internal,whatsapp'],
         ];
     }

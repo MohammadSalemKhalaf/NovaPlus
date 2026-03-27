@@ -12,14 +12,11 @@ use Illuminate\Http\Request;
 
 class CatalogController extends Controller
 {
-    public function show(Request $request, string $tenant_slug): JsonResponse
+    public function show(Request $request, Tenant $tenant_slug): JsonResponse
     {
-        $tenant = Tenant::query()
-            ->where('slug', $tenant_slug)
-            ->where('status', 'active')
-            ->first();
+        $tenant = $tenant_slug;
 
-        if ($tenant === null) {
+        if ($tenant->status !== 'active') {
             return response()->json([
                 'success' => false,
                 'message' => 'Catalog not found.',

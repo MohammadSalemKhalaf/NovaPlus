@@ -27,10 +27,12 @@ class TenantController extends Controller
                 'name' => $payload['name'],
                 'slug' => Str::slug($payload['slug']),
                 'business_mode' => $payload['business_mode'],
+                'business_type_id' => $payload['business_type_id'],
                 'status' => 'draft',
                 'primary_language' => $payload['primary_language'],
                 'currency_code' => $payload['currency_code'],
                 'timezone' => $payload['timezone'],
+                'whatsapp_number' => $payload['whatsapp_number'] ?? null,
                 'onboarding_completed_at' => null,
             ]);
 
@@ -80,6 +82,8 @@ class TenantController extends Controller
                     'name' => $tenant->name,
                     'slug' => $tenant->slug,
                     'business_mode' => $tenant->business_mode,
+                    'business_type_id' => $tenant->business_type_id,
+                    'whatsapp_number' => $tenant->whatsapp_number,
                     'primary_language' => $tenant->primary_language,
                     'currency_code' => $tenant->currency_code,
                     'timezone' => $tenant->timezone,

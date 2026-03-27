@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\BusinessType;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TenantUser;
 use App\Models\User;
@@ -12,6 +14,11 @@ class DevAuthTenantSeeder extends Seeder
 {
     public function run(): void
     {
+        $businessTypeId = BusinessType::query()
+            ->where('slug', 'general-trading')
+            ->where('status', 'active')
+            ->value('id');
+
         $admin = User::query()->updateOrCreate(
             ['email' => 'admin@novaplus.test'],
             [
@@ -40,10 +47,12 @@ class DevAuthTenantSeeder extends Seeder
                 'owner_user_id' => $owner->id,
                 'name' => 'NovaPlus Demo',
                 'business_mode' => 'product',
+                'business_type_id' => $businessTypeId,
                 'status' => 'active',
                 'primary_language' => 'en',
                 'currency_code' => 'USD',
                 'timezone' => 'Asia/Hebron',
+                'whatsapp_number' => '+970599000111',
                 'onboarding_completed_at' => null,
             ],
         );
@@ -66,6 +75,19 @@ class DevAuthTenantSeeder extends Seeder
             [
                 'role' => 'owner',
                 'status' => 'active',
+            ],
+        );
+
+        Subscription::query()->updateOrCreate(
+            [
+                'tenant_id' => $tenant->id,
+                'plan_code' => 'starter',
+            ],
+            [
+                'status' => 'active',
+                'starts_at' => now()->subDay(),
+                'ends_at' => now()->addMonth(),
+                'billing_cycle' => 'monthly',
             ],
         );
     }

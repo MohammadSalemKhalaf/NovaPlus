@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Http\Requests\Admin;
+namespace App\Http\Requests\Public;
 
-use Illuminate\Database\Query\Builder;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 
-class TenantStoreRequest extends FormRequest
+class PublicStoreIndexRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -21,18 +21,14 @@ class TenantStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'unique:tenants,slug'],
-            'business_mode' => ['required', 'string', 'in:product,service'],
             'business_type_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('business_types', 'id')->where(fn (Builder $query) => $query->where('status', 'active')),
             ],
-            'primary_language' => ['required', 'string', 'max:32'],
-            'currency_code' => ['required', 'string', 'max:16'],
-            'timezone' => ['required', 'string', 'max:64'],
-            'whatsapp_number' => ['nullable', 'string', 'min:8', 'max:15'],
+            'search' => ['nullable', 'string', 'max:255'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
@@ -45,4 +41,3 @@ class TenantStoreRequest extends FormRequest
         ], 422));
     }
 }
-

@@ -38,10 +38,12 @@ class OnboardingController extends Controller
                     'name' => $validated['tenant_name'],
                     'slug' => $validated['tenant_slug'],
                     'business_mode' => $validated['business_mode'],
+                    'business_type_id' => $validated['business_type_id'],
                     'status' => $validated['activation_channel'] === 'email' ? 'pending' : 'active',
                     'primary_language' => 'en',
                     'currency_code' => 'USD',
                     'timezone' => 'UTC',
+                    'whatsapp_number' => $validated['tenant_whatsapp_number'] ?? null,
                 ]);
 
                 TenantUser::query()->create([
@@ -74,6 +76,7 @@ class OnboardingController extends Controller
                 'data' => [
                     'owner_user_id' => $owner->id,
                     'tenant_id' => $tenant->id,
+                    'business_type_id' => $tenant->business_type_id,
                     'activation_channel' => $validated['activation_channel'],
                     'email' => $owner->email,
                     'requires_verification' => $validated['activation_channel'] === 'email',
