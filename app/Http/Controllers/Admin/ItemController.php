@@ -38,9 +38,25 @@ class ItemController extends Controller
         }
 
         $perPage = max(1, min(100, $request->integer('per_page', 15)));
+        $categoryId = $request->integer('category_id');
+        $search = trim((string) $request->input('search', ''));
+        $statusFilter = (string) $request->input('status', '');
 
         $items = Item::query()
             ->where('tenant_id', $tenantId)
+            ->when($categoryId > 0, function ($query) use ($categoryId): void {
+                $query->where('category_id', $categoryId);
+            })
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where('name', 'like', '%'.$search.'%');
+            })
+            ->when($statusFilter !== '', function ($query) use ($statusFilter): void {
+                if ($statusFilter === 'active') {
+                    $query->where('status', 'active');
+                } elseif ($statusFilter === 'inactive') {
+                    $query->whereIn('status', ['draft', 'archived']);
+                }
+            })
             ->select([
                 'id',
                 'tenant_id',
@@ -66,56 +82,57 @@ class ItemController extends Controller
                         ->select([
                             'id',
                             'tenant_id',
-                            'parent_id',
                             'name',
-                            'slug',
-                            'description',
-                            'sort_order',
-                            'status',
                         ]);
                 },
                 'primaryImage' => function ($query) use ($tenantId): void {
                     $query
-                        ->where('tenant_id', $tenantId)
+                        ->where('item_images.tenant_id', $tenantId)
                         ->select([
-                            'id',
-                            'tenant_id',
-                            'item_id',
-                            'storage_path',
-                            'alt_text',
-                            'sort_order',
-                            'is_primary',
-                            'created_at',
-                            'updated_at',
+                            'item_images.id',
+                            'item_images.item_id',
+                            'item_images.storage_path',
+                            'item_images.is_primary',
                         ]);
                 },
                 'activePrice' => function ($query) use ($tenantId): void {
                     $query
-                        ->where('tenant_id', $tenantId)
+                        ->where('item_prices.tenant_id', $tenantId)
+                        ->where('item_prices.pricing_status', 'active')
                         ->select([
-                            'id',
-                            'tenant_id',
-                            'item_id',
-                            'currency_code',
-                            'base_price_amount',
-                            'compare_at_price_amount',
-                            'pricing_status',
-                            'effective_from',
-                            'effective_to',
-                            'created_at',
-                            'updated_at',
+                            'item_prices.id',
+                            'item_prices.tenant_id',
+                            'item_prices.item_id',
+                            'item_prices.currency_code',
+                            'item_prices.base_price_amount',
                         ]);
                 },
             ])
-            ->orderBy('sort_order')
-            ->orderByDesc('id')
+            ->latest('id')
             ->paginate($perPage);
+
+        $itemsData = collect($items->items())->map(function (Item $item): array {
+            return [
+                'id' => $item->id,
+                'name' => $item->name,
+                'category' => $item->category !== null ? [
+                    'id' => $item->category->id,
+                    'name' => $item->category->name,
+                ] : null,
+                'price' => $item->activePrice !== null ? [
+                    'amount' => $item->activePrice->base_price_amount,
+                    'currency' => $item->activePrice->currency_code,
+                ] : null,
+                'image' => $item->primaryImage?->storage_path,
+                'status' => $item->status,
+            ];
+        })->values();
 
         return response()->json([
             'success' => true,
             'message' => 'Items fetched successfully.',
-            'data' => [
-                'items' => ItemResource::collection(collect($items->items())),
+            'data' => $itemsData,
+            'meta' => [
                 'pagination' => [
                     'current_page' => $items->currentPage(),
                     'last_page' => $items->lastPage(),
@@ -123,7 +140,6 @@ class ItemController extends Controller
                     'total' => $items->total(),
                 ],
             ],
-            'meta' => (object) [],
         ]);
     }
 
@@ -169,18 +185,18 @@ class ItemController extends Controller
             },
             'primaryImage' => function ($query) use ($tenantId, $item): void {
                 $query
-                    ->where('tenant_id', $tenantId)
-                    ->where('item_id', $item->id)
+                    ->where('item_images.tenant_id', $tenantId)
+                    ->where('item_images.item_id', $item->id)
                     ->select([
-                        'id',
-                        'tenant_id',
-                        'item_id',
-                        'storage_path',
-                        'alt_text',
-                        'sort_order',
-                        'is_primary',
-                        'created_at',
-                        'updated_at',
+                        'item_images.id',
+                        'item_images.tenant_id',
+                        'item_images.item_id',
+                        'item_images.storage_path',
+                        'item_images.alt_text',
+                        'item_images.sort_order',
+                        'item_images.is_primary',
+                        'item_images.created_at',
+                        'item_images.updated_at',
                     ]);
             },
         ]);
@@ -241,34 +257,34 @@ class ItemController extends Controller
                 },
                 'primaryImage' => function ($query) use ($tenantId): void {
                     $query
-                        ->where('tenant_id', $tenantId)
+                        ->where('item_images.tenant_id', $tenantId)
                         ->select([
-                            'id',
-                            'tenant_id',
-                            'item_id',
-                            'storage_path',
-                            'alt_text',
-                            'sort_order',
-                            'is_primary',
-                            'created_at',
-                            'updated_at',
+                            'item_images.id',
+                            'item_images.tenant_id',
+                            'item_images.item_id',
+                            'item_images.storage_path',
+                            'item_images.alt_text',
+                            'item_images.sort_order',
+                            'item_images.is_primary',
+                            'item_images.created_at',
+                            'item_images.updated_at',
                         ]);
                 },
                 'activePrice' => function ($query) use ($tenantId): void {
                     $query
-                        ->where('tenant_id', $tenantId)
+                        ->where('item_prices.tenant_id', $tenantId)
                         ->select([
-                            'id',
-                            'tenant_id',
-                            'item_id',
-                            'currency_code',
-                            'base_price_amount',
-                            'compare_at_price_amount',
-                            'pricing_status',
-                            'effective_from',
-                            'effective_to',
-                            'created_at',
-                            'updated_at',
+                            'item_prices.id',
+                            'item_prices.tenant_id',
+                            'item_prices.item_id',
+                            'item_prices.currency_code',
+                            'item_prices.base_price_amount',
+                            'item_prices.compare_at_price_amount',
+                            'item_prices.pricing_status',
+                            'item_prices.effective_from',
+                            'item_prices.effective_to',
+                            'item_prices.created_at',
+                            'item_prices.updated_at',
                         ]);
                 },
             ])
@@ -361,18 +377,18 @@ class ItemController extends Controller
             },
             'primaryImage' => function ($query) use ($tenantId, $record): void {
                 $query
-                    ->where('tenant_id', $tenantId)
-                    ->where('item_id', $record->id)
+                    ->where('item_images.tenant_id', $tenantId)
+                    ->where('item_images.item_id', $record->id)
                     ->select([
-                        'id',
-                        'tenant_id',
-                        'item_id',
-                        'storage_path',
-                        'alt_text',
-                        'sort_order',
-                        'is_primary',
-                        'created_at',
-                        'updated_at',
+                        'item_images.id',
+                        'item_images.tenant_id',
+                        'item_images.item_id',
+                        'item_images.storage_path',
+                        'item_images.alt_text',
+                        'item_images.sort_order',
+                        'item_images.is_primary',
+                        'item_images.created_at',
+                        'item_images.updated_at',
                     ]);
             },
         ]);

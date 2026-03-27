@@ -52,38 +52,52 @@ class CatalogController extends Controller
             ->where('visibility', 'public')
             ->whereHas('itemPrices', function ($query) use ($tenant): void {
                 $query
-                    ->where('tenant_id', $tenant->id)
-                    ->where('pricing_status', 'active')
-                    ->where('effective_from', '<=', now())
+                    ->where('item_prices.tenant_id', $tenant->id)
+                    ->where('item_prices.pricing_status', 'active')
+                    ->where('item_prices.effective_from', '<=', now())
                     ->where(function ($nested): void {
-                        $nested->whereNull('effective_to')->orWhere('effective_to', '>=', now());
+                        $nested->whereNull('item_prices.effective_to')->orWhere('item_prices.effective_to', '>=', now());
                     });
             })
             ->with([
                 'category:id,tenant_id,parent_id,name,slug,description,sort_order,status',
                 'activePrice' => function ($query) use ($tenant): void {
                     $query
-                        ->where('tenant_id', $tenant->id)
-                        ->where('pricing_status', 'active')
-                        ->where('effective_from', '<=', now())
+                        ->where('item_prices.tenant_id', $tenant->id)
+                        ->where('item_prices.pricing_status', 'active')
+                        ->where('item_prices.effective_from', '<=', now())
                         ->where(function ($nested): void {
-                            $nested->whereNull('effective_to')->orWhere('effective_to', '>=', now());
+                            $nested->whereNull('item_prices.effective_to')->orWhere('item_prices.effective_to', '>=', now());
                         })
                         ->select([
-                            'id',
-                            'tenant_id',
-                            'item_id',
-                            'currency_code',
-                            'base_price_amount',
-                            'compare_at_price_amount',
-                            'pricing_status',
-                            'effective_from',
-                            'effective_to',
-                            'created_at',
-                            'updated_at',
+                            'item_prices.id',
+                            'item_prices.tenant_id',
+                            'item_prices.item_id',
+                            'item_prices.currency_code',
+                            'item_prices.base_price_amount',
+                            'item_prices.compare_at_price_amount',
+                            'item_prices.pricing_status',
+                            'item_prices.effective_from',
+                            'item_prices.effective_to',
+                            'item_prices.created_at',
+                            'item_prices.updated_at',
                         ]);
                 },
-                'primaryImage:id,tenant_id,item_id,storage_path,alt_text,sort_order,is_primary,created_at,updated_at',
+                'primaryImage' => function ($query) use ($tenant): void {
+                    $query
+                        ->where('item_images.tenant_id', $tenant->id)
+                        ->select([
+                            'item_images.id',
+                            'item_images.tenant_id',
+                            'item_images.item_id',
+                            'item_images.storage_path',
+                            'item_images.alt_text',
+                            'item_images.sort_order',
+                            'item_images.is_primary',
+                            'item_images.created_at',
+                            'item_images.updated_at',
+                        ]);
+                },
                 'itemImages' => function ($query) use ($tenant): void {
                     $query
                         ->where('tenant_id', $tenant->id)

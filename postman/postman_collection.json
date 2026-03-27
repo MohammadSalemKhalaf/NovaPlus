@@ -1,347 +1,734 @@
 {
-  "info": {
-    "_postman_id": "b2d9b84b-0f2d-4f10-8a4b-9a0b0c2db1a0",
-    "name": "NovaPlus Phase 1 - Admin API",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Clean flow: Auth, Admin Flow, Owner Flow"
-  },
-  "item": [
-    {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "Admin Login",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@novaplus.test\",\n  \"password\": \"password123\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "auth", "login"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.environment.set('token', String(json.data.token));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Owner Login",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{owner_email}}\",\n  \"password\": \"{{owner_password}}\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "auth", "login"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.environment.set('owner_token', String(json.data.token));",
-                  "if (json.data.tenants && json.data.tenants.length > 0) { pm.environment.set('owner_tenant_id', String(json.data.tenants[0].id)); }"
-                ]
-              }
-            }
-          ]
-        }
-      ]
+    "info": {
+        "_postman_id": "b2d9b84b-0f2d-4f10-8a4b-9a0b0c2db1a0",
+        "name": "NovaPlus Phase 1 - Admin API",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "description": "Clean flow: Auth, Admin Flow, Owner Flow"
     },
-    {
-      "name": "Admin Flow",
-      "item": [
+    "item": [
         {
-          "name": "Onboard Owner",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"owner_name\": \"Owner {{$timestamp}}\",\n  \"owner_email\": \"owner{{$timestamp}}@novaplus.test\",\n  \"password\": \"OwnerPass123!\",\n  \"tenant_name\": \"Store {{$timestamp}}\",\n  \"tenant_slug\": \"store-{{$timestamp}}\",\n  \"business_mode\": \"product\",\n  \"activation_channel\": \"email\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/onboarding/owner",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "onboarding", "owner"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.environment.set('owner_user_id', String(json.data.owner_user_id));",
-                  "pm.environment.set('tenant_id', String(json.data.tenant_id));",
-                  "pm.environment.set('owner_tenant_id', String(json.data.tenant_id));",
-                  "pm.environment.set('owner_email', String(json.data.email));",
-                  "pm.environment.set('owner_password', 'OwnerPass123!');"
-                ]
-              }
-            }
-          ]
+            "name": "Auth",
+            "item": [
+                {
+                    "name": "Admin Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"admin@novaplus.test\",\n  \"password\": \"password123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/admin/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                                    "const json = pm.response.json();",
+                                    "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                                    "pm.environment.set('token', String(json.data.token));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Owner Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{owner_email}}\",\n  \"password\": \"{{owner_password}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/admin/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                                    "const json = pm.response.json();",
+                                    "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                                    "pm.environment.set('owner_token', String(json.data.token));",
+                                    "if (json.data.tenants && json.data.tenants.length > 0) { pm.environment.set('owner_tenant_id', String(json.data.tenants[0].id)); }"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "name": "Create Subscription Code",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"duration_months\": 12,\n  \"code\": \"SUB-{{$timestamp}}\",\n  \"note\": \"Admin created code\",\n  \"sold_by_user_id\": null\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/subscriptions/codes",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "subscriptions", "codes"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.environment.set('subscription_code', String(json.data.code));"
-                ]
-              }
-            }
-          ]
+            "name": "Admin Flow",
+            "item": [
+                {
+                    "name": "Onboard Owner",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"owner_name\": \"Owner {{$timestamp}}\",\n  \"owner_email\": \"owner{{$timestamp}}@novaplus.test\",\n  \"password\": \"OwnerPass123!\",\n  \"tenant_name\": \"Store {{$timestamp}}\",\n  \"tenant_slug\": \"store-{{$timestamp}}\",\n  \"business_mode\": \"product\",\n  \"activation_channel\": \"email\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/admin/onboarding/owner",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "onboarding",
+                                "owner"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                                    "const json = pm.response.json();",
+                                    "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                                    "pm.environment.set('owner_user_id', String(json.data.owner_user_id));",
+                                    "pm.environment.set('tenant_id', String(json.data.tenant_id));",
+                                    "pm.environment.set('owner_tenant_id', String(json.data.tenant_id));",
+                                    "pm.environment.set('owner_email', String(json.data.email));",
+                                    "pm.environment.set('owner_password', 'OwnerPass123!');"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Create Subscription Code",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"duration_months\": 12,\n  \"code\": \"SUB-{{$timestamp}}\",\n  \"note\": \"Admin created code\",\n  \"sold_by_user_id\": null\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/admin/subscriptions/codes",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "subscriptions",
+                                "codes"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                                    "const json = pm.response.json();",
+                                    "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                                    "pm.environment.set('subscription_code', String(json.data.code));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Redeem Subscription Code",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"{{subscription_code}}\",\n  \"tenant_id\": {{tenant_id}}\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/admin/subscriptions/redeem",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "subscriptions",
+                                "redeem"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                                    "const json = pm.response.json();",
+                                    "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                                    "pm.test('Subscription active', function () { pm.expect(json.data.status).to.eql('active'); });",
+                                    "pm.environment.set('subscription_id', String(json.data.subscription_id));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "name": "Redeem Subscription Code",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"code\": \"{{subscription_code}}\",\n  \"tenant_id\": {{tenant_id}}\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/subscriptions/redeem",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "subscriptions", "redeem"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Subscription active', function () { pm.expect(json.data.status).to.eql('active'); });",
-                  "pm.environment.set('subscription_id', String(json.data.subscription_id));"
-                ]
-              }
-            }
-          ]
+            "name": "Owner Flow",
+            "item": [
+                {
+                    "name": "Create Category (Optional)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{owner_token}}"
+                            },
+                            {
+                                "key": "X-Tenant-ID",
+                                "value": "{{owner_tenant_id}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"parent_id\": null,\n  \"name\": \"Optional Category {{$timestamp}}\",\n  \"slug\": \"optional-category-{{$timestamp}}\",\n  \"description\": \"Optional category\",\n  \"sort_order\": 1,\n  \"status\": \"active\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/admin/catalog/categories",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "catalog",
+                                "categories"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                                    "const json = pm.response.json();",
+                                    "pm.environment.set('category_id', String(json.data.category.id));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Create Item (Category Nullable)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{owner_token}}"
+                            },
+                            {
+                                "key": "X-Tenant-ID",
+                                "value": "{{owner_tenant_id}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"category_id\": null,\n  \"name\": \"Owner Item {{$timestamp}}\",\n  \"slug\": \"owner-item-{{$timestamp}}\",\n  \"short_description\": \"Simple item\",\n  \"long_description\": \"No category required\",\n  \"item_type\": \"product\",\n  \"status\": \"active\",\n  \"visibility\": \"public\",\n  \"primary_image_id\": null,\n  \"sort_order\": 1\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/admin/catalog/items",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "catalog",
+                                "items"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                                    "const json = pm.response.json();",
+                                    "pm.environment.set('item_id', String(json.data.item.id));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Set Active Price",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{owner_token}}"
+                            },
+                            {
+                                "key": "X-Tenant-ID",
+                                "value": "{{owner_tenant_id}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"currency_code\": \"USD\",\n  \"base_price_amount\": \"19.99\",\n  \"compare_at_price_amount\": null,\n  \"effective_from\": \"2026-03-27 10:00:00\",\n  \"effective_to\": null\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/prices/active",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "catalog",
+                                "items",
+                                "{{item_id}}",
+                                "prices",
+                                "active"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                                    "const json = pm.response.json();",
+                                    "pm.environment.set('price_id', String(json.data.price.id));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Upload Image",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{owner_token}}"
+                            },
+                            {
+                                "key": "X-Tenant-ID",
+                                "value": "{{owner_tenant_id}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "image",
+                                    "type": "file",
+                                    "src": ""
+                                },
+                                {
+                                    "key": "alt_text",
+                                    "type": "text",
+                                    "value": "Owner image"
+                                },
+                                {
+                                    "key": "sort_order",
+                                    "type": "text",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "is_primary",
+                                    "type": "text",
+                                    "value": "true"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/images",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "catalog",
+                                "items",
+                                "{{item_id}}",
+                                "images"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                                    "const json = pm.response.json();",
+                                    "pm.environment.set('image_id', String(json.data.image.id));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET Owner List Items",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{owner_token}}"
+                            },
+                            {
+                                "key": "X-Tenant-ID",
+                                "value": "{{owner_tenant_id}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/catalog/items",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "catalog",
+                                "items"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                                    "pm.test('Has data', function () {",
+                                    "  const json = pm.response.json();",
+                                    "  pm.expect(json.data).to.be.an('array');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET Owner Filter Items by Category",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{owner_token}}"
+                            },
+                            {
+                                "key": "X-Tenant-ID",
+                                "value": "{{owner_tenant_id}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/catalog/items?category_id={{category_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "catalog",
+                                "items"
+                            ],
+                            "query": [
+                                {
+                                    "key": "category_id",
+                                    "value": "{{category_id}}"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                                    "pm.test('Has data', function () {",
+                                    "  const json = pm.response.json();",
+                                    "  pm.expect(json.data).to.be.an('array');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET Owner Search Items",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{owner_token}}"
+                            },
+                            {
+                                "key": "X-Tenant-ID",
+                                "value": "{{owner_tenant_id}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/catalog/items?search=cola",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "catalog",
+                                "items"
+                            ],
+                            "query": [
+                                {
+                                    "key": "search",
+                                    "value": "cola"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                                    "pm.test('Has data', function () {",
+                                    "  const json = pm.response.json();",
+                                    "  pm.expect(json.data).to.be.an('array');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET Owner Categories",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{owner_token}}"
+                            },
+                            {
+                                "key": "X-Tenant-ID",
+                                "value": "{{owner_tenant_id}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/catalog/categories",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "catalog",
+                                "categories"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                                    "pm.test('Has data', function () {",
+                                    "  const json = pm.response.json();",
+                                    "  pm.expect(json.data).to.be.an('array');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    },
-    {
-      "name": "Owner Flow",
-      "item": [
-        {
-          "name": "Create Category (Optional)",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{owner_token}}" },
-              { "key": "X-Tenant-ID", "value": "{{owner_tenant_id}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"parent_id\": null,\n  \"name\": \"Optional Category {{$timestamp}}\",\n  \"slug\": \"optional-category-{{$timestamp}}\",\n  \"description\": \"Optional category\",\n  \"sort_order\": 1,\n  \"status\": \"active\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/categories",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "categories"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.environment.set('category_id', String(json.data.category.id));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Create Item (Category Nullable)",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{owner_token}}" },
-              { "key": "X-Tenant-ID", "value": "{{owner_tenant_id}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"category_id\": null,\n  \"name\": \"Owner Item {{$timestamp}}\",\n  \"slug\": \"owner-item-{{$timestamp}}\",\n  \"short_description\": \"Simple item\",\n  \"long_description\": \"No category required\",\n  \"item_type\": \"product\",\n  \"status\": \"active\",\n  \"visibility\": \"public\",\n  \"primary_image_id\": null,\n  \"sort_order\": 1\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.environment.set('item_id', String(json.data.item.id));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Set Active Price",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{owner_token}}" },
-              { "key": "X-Tenant-ID", "value": "{{owner_tenant_id}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"currency_code\": \"USD\",\n  \"base_price_amount\": \"19.99\",\n  \"compare_at_price_amount\": null,\n  \"effective_from\": \"2026-03-27 10:00:00\",\n  \"effective_to\": null\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/prices/active",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items", "{{item_id}}", "prices", "active"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.environment.set('price_id', String(json.data.price.id));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Upload Image",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{owner_token}}" },
-              { "key": "X-Tenant-ID", "value": "{{owner_tenant_id}}" }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                { "key": "image", "type": "file", "src": "" },
-                { "key": "alt_text", "type": "text", "value": "Owner image" },
-                { "key": "sort_order", "type": "text", "value": "1" },
-                { "key": "is_primary", "type": "text", "value": "true" }
-              ]
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/images",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "catalog", "items", "{{item_id}}", "images"]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.environment.set('image_id', String(json.data.image.id));"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    }
-  ]
+    ]
 }

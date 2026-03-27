@@ -38,55 +38,36 @@ class CategoryController extends Controller
         }
 
         $perPage = max(1, min(100, $request->integer('per_page', 15)));
-        $includeChildren = $request->boolean('include_children', true);
 
-        $query = Category::query()
+        $categories = Category::query()
             ->where('tenant_id', $tenantId)
+            ->where('status', 'active')
             ->select([
                 'id',
                 'tenant_id',
                 'parent_id',
                 'name',
                 'slug',
-                'description',
-                'sort_order',
                 'status',
-                'created_at',
-                'updated_at',
             ])
-            ->orderBy('sort_order')
-            ->orderByDesc('id');
+            ->latest('id')
+            ->paginate($perPage);
 
-        if ($includeChildren) {
-            $query->with([
-                'children' => function ($childrenQuery) use ($tenantId): void {
-                    $childrenQuery
-                        ->where('tenant_id', $tenantId)
-                        ->select([
-                            'id',
-                            'tenant_id',
-                            'parent_id',
-                            'name',
-                            'slug',
-                            'description',
-                            'sort_order',
-                            'status',
-                            'created_at',
-                            'updated_at',
-                        ])
-                        ->orderBy('sort_order')
-                        ->orderByDesc('id');
-                },
-            ]);
-        }
-
-        $categories = $query->paginate($perPage);
+        $categoriesData = collect($categories->items())->map(function (Category $category): array {
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'parent_id' => $category->parent_id,
+                'status' => $category->status,
+            ];
+        })->values();
 
         return response()->json([
             'success' => true,
             'message' => 'Categories fetched successfully.',
-            'data' => [
-                'categories' => CategoryResource::collection(collect($categories->items())),
+            'data' => $categoriesData,
+            'meta' => [
                 'pagination' => [
                     'current_page' => $categories->currentPage(),
                     'last_page' => $categories->lastPage(),
@@ -94,7 +75,6 @@ class CategoryController extends Controller
                     'total' => $categories->total(),
                 ],
             ],
-            'meta' => (object) [],
         ]);
     }
 

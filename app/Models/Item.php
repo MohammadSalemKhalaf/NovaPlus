@@ -64,7 +64,7 @@ class Item extends Model
     public function activePrice(): HasOne
     {
         return $this->hasOne(ItemPrice::class, 'item_id')
-            ->where('pricing_status', 'active')
+            ->where('item_prices.pricing_status', 'active')
             ->latestOfMany('id');
     }
 
@@ -73,9 +73,11 @@ class Item extends Model
         return $this->hasMany(ItemImage::class, 'item_id');
     }
 
-    public function primaryImage(): BelongsTo
+    public function primaryImage(): HasOne
     {
-        return $this->belongsTo(ItemImage::class, 'primary_image_id');
+        return $this->hasOne(ItemImage::class, 'item_id')
+            ->where('item_images.is_primary', true)
+            ->latestOfMany('id');
     }
 
     public function createdBy(): BelongsTo
