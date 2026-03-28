@@ -6,8 +6,13 @@ use App\Http\Controllers\Admin\ItemController;
 use App\Http\Controllers\Admin\ItemImageController;
 use App\Http\Controllers\Admin\ItemPriceController;
 use App\Http\Controllers\Admin\OnboardingController;
+use App\Http\Controllers\Admin\RevenueController;
+use App\Http\Controllers\Admin\SalesAgentController;
+use App\Http\Controllers\Admin\SalesAgentPerformanceController;
 use App\Http\Controllers\Admin\SubscriptionController;
+use App\Http\Controllers\Admin\SubscriptionManagementController;
 use App\Http\Controllers\Admin\TenantController;
+use App\Http\Controllers\Admin\TenantControlController;
 use App\Http\Controllers\Admin\TenantUserController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Owner\CategoryController as OwnerCategoryController;
@@ -17,7 +22,12 @@ use App\Http\Controllers\Public\CartController;
 use App\Http\Controllers\Public\CatalogController as LegacyPublicCatalogController;
 use App\Http\Controllers\Public\PublicCatalogController;
 use App\Http\Controllers\Public\StoreDiscoveryController;
+use App\Http\Controllers\EndUser\CartPersistenceController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\EndUser\EndUserAuthController;
+use App\Http\Controllers\EndUser\FavoritesController;
+use App\Http\Controllers\EndUser\PreferencesController;
+use App\Http\Controllers\EndUser\RecentlyViewedController;
 
 Route::prefix('v1/admin')->group(function (): void {
     Route::prefix('auth')->group(function (): void {
@@ -34,6 +44,15 @@ Route::prefix('v1/admin')->group(function (): void {
             Route::post('users', [UserController::class, 'store']);
             Route::post('tenants', [TenantController::class, 'store']);
 
+            Route::prefix('sales-agents')->group(function (): void {
+                Route::post('/', [SalesAgentController::class, 'store']);
+                Route::get('/', [SalesAgentController::class, 'index']);
+                Route::get('{sales_agent}', [SalesAgentController::class, 'show']);
+                Route::put('{sales_agent}', [SalesAgentController::class, 'update']);
+                Route::patch('{sales_agent}/status', [SalesAgentController::class, 'updateStatus']);
+                Route::delete('{sales_agent}', [SalesAgentController::class, 'destroy']);
+            });
+
             Route::prefix('onboarding')->group(function (): void {
                 Route::post('owner', [OnboardingController::class, 'storeOwner']);
             });
@@ -41,6 +60,32 @@ Route::prefix('v1/admin')->group(function (): void {
             Route::prefix('subscriptions')->group(function (): void {
                 Route::post('codes', [SubscriptionController::class, 'storeCode']);
                 Route::post('redeem', [SubscriptionController::class, 'redeem']);
+            });
+
+            // Revenue and subscription management (super_admin only)
+            Route::prefix('revenue')->group(function (): void {
+                Route::get('dashboard', [RevenueController::class, 'dashboard']);
+                Route::get('by-agent', [RevenueController::class, 'byAgent']);
+                Route::get('top-agents', [RevenueController::class, 'topAgents']);
+            });
+
+            Route::prefix('subscriptions-management')->group(function (): void {
+                Route::get('/', [SubscriptionManagementController::class, 'index']);
+                Route::get('active', [SubscriptionManagementController::class, 'active']);
+                Route::get('expired', [SubscriptionManagementController::class, 'expired']);
+                Route::get('expiring-soon', [SubscriptionManagementController::class, 'expiringSoon']);
+                Route::get('{id}', [SubscriptionManagementController::class, 'show']);
+                Route::post('{id}/action', [SubscriptionManagementController::class, 'action']);
+            });
+
+            Route::prefix('tenants')->group(function (): void {
+                Route::get('{id}/controls', [TenantControlController::class, 'show']);
+                Route::post('{id}/controls', [TenantControlController::class, 'action']);
+            });
+
+            Route::prefix('sales-agents')->group(function (): void {
+                Route::get('{id}/performance', [SalesAgentPerformanceController::class, 'show']);
+                Route::get('performance/top-performers', [SalesAgentPerformanceController::class, 'topPerformers']);
             });
         });
 
@@ -108,5 +153,43 @@ Route::prefix('v1/public')->group(function (): void {
     Route::delete('cart/items/{item_id}', [CartController::class, 'removeItem']);
     Route::post('cart/clear', [CartController::class, 'clear']);
     Route::post('cart/checkout-whatsapp', [CartController::class, 'checkoutWhatsApp']);
+});
+
+Route::prefix('v1/enduser')->group(function (): void {
+    Route::prefix('auth')->group(function (): void {
+        Route::post('register', [EndUserAuthController::class, 'register']);
+        Route::post('login', [EndUserAuthController::class, 'login']);
+
+        Route::middleware('auth:sanctum')->group(function (): void {
+            Route::post('logout', [EndUserAuthController::class, 'logout']);
+            Route::get('profile', [EndUserAuthController::class, 'profile']);
+            Route::put('profile', [EndUserAuthController::class, 'updateProfile']);
+        });
+    });
+
+    Route::middleware('auth:sanctum')->group(function (): void {
+        Route::prefix('favorites')->group(function (): void {
+            Route::get('/', [FavoritesController::class, 'index']);
+            Route::post('/', [FavoritesController::class, 'store']);
+            Route::get('check/{tenant_id}', [FavoritesController::class, 'check']);
+            Route::delete('{tenant_id}', [FavoritesController::class, 'destroy']);
+        });
+
+        Route::prefix('preferences')->group(function (): void {
+            Route::get('/', [PreferencesController::class, 'show']);
+            Route::put('/', [PreferencesController::class, 'update']);
+        });
+
+        Route::prefix('recently-viewed')->group(function (): void {
+            Route::get('/', [RecentlyViewedController::class, 'index']);
+            Route::post('{tenant_id}', [RecentlyViewedController::class, 'store']);
+        });
+
+        Route::prefix('cart')->group(function (): void {
+            Route::get('/', [CartPersistenceController::class, 'show']);
+            Route::post('merge-preview', [CartPersistenceController::class, 'previewMerge']);
+            Route::post('merge-device', [CartPersistenceController::class, 'merge']);
+        });
+    });
 });
 

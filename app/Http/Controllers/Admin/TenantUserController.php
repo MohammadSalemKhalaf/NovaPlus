@@ -14,7 +14,10 @@ class TenantUserController extends Controller
     {
         $actor = $request->user();
 
-        $canAssign = TenantUser::query()
+        // Allow super_admin, sales_agent, or tenant owner/admin to assign users
+        $isSuperAdminOrAgent = $actor?->isSuperAdmin() || $actor?->isSalesAgent();
+        
+        $canAssign = $isSuperAdminOrAgent || TenantUser::query()
             ->where('tenant_id', $tenant->id)
             ->where('user_id', $actor?->id)
             ->where('status', 'active')

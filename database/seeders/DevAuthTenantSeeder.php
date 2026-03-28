@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\BusinessType;
+use App\Models\Role;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TenantUser;
@@ -90,6 +91,28 @@ class DevAuthTenantSeeder extends Seeder
                 'billing_cycle' => 'monthly',
             ],
         );
+
+        $rolesBySlug = Role::query()
+            ->whereIn('slug', ['super_admin', 'store_owner', 'end_user'])
+            ->pluck('id', 'slug');
+
+        $ownerRoleIds = array_values(array_filter([
+            $rolesBySlug['store_owner'] ?? null,
+            $rolesBySlug['end_user'] ?? null,
+        ]));
+
+        if (!empty($ownerRoleIds)) {
+            $owner->roles()->syncWithoutDetaching($ownerRoleIds);
+        }
+
+        $adminRoleIds = array_values(array_filter([
+            $rolesBySlug['super_admin'] ?? null,
+            $rolesBySlug['end_user'] ?? null,
+        ]));
+
+        if (!empty($adminRoleIds)) {
+            $admin->roles()->syncWithoutDetaching($adminRoleIds);
+        }
     }
 }
 

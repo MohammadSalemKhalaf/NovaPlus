@@ -16,6 +16,7 @@ class CartItem extends Model
     protected $fillable = [
         'cart_id',
         'device_id',
+        'user_id',
         'item_id',
         'quantity',
         'unit_price_snapshot',
@@ -26,10 +27,16 @@ class CartItem extends Model
         return [
             'cart_id' => 'integer',
             'device_id' => 'string',
+            'user_id' => 'integer',
             'item_id' => 'integer',
             'quantity' => 'integer',
             'unit_price_snapshot' => 'decimal:2',
         ];
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function cart(): BelongsTo

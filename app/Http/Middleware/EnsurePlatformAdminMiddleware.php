@@ -19,11 +19,14 @@ class EnsurePlatformAdminMiddleware
             ], 401);
         }
 
-        $hasActiveTenantMembership = $user->tenantUsers()
+        // Allow super_admin (no tenant membership) or sales_agent (global role)
+        $isSuperAdmin = !$user->tenantUsers()
             ->where('status', 'active')
             ->exists();
 
-        if ($hasActiveTenantMembership) {
+        $isSalesAgent = $user->isSalesAgent();
+
+        if (!($isSuperAdmin || $isSalesAgent)) {
             return response()->json([
                 'success' => false,
                 'message' => 'You are not authorized to access this resource.',

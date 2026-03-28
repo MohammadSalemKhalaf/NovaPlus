@@ -38,7 +38,10 @@ class EnsureTenantAccessMiddleware
             ], 400);
         }
 
-        $hasAccess = $user->tenantUsers()
+        // Allow access if user is a tenant member OR is a sales_agent
+        $isSalesAgent = $user->isSalesAgent();
+        
+        $hasAccess = $isSalesAgent || $user->tenantUsers()
             ->where('tenant_id', $tenant->getKey())
             ->where('status', 'active')
             ->exists();

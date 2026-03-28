@@ -17,6 +17,7 @@ class Cart extends Model
     protected $fillable = [
         'tenant_id',
         'device_id',
+        'user_id',
         'status',
     ];
 
@@ -25,8 +26,14 @@ class Cart extends Model
         return [
             'tenant_id' => 'integer',
             'device_id' => 'string',
+            'user_id' => 'integer',
             'status' => 'string',
         ];
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function tenant(): BelongsTo
