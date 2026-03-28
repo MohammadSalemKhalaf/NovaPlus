@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'platform.admin' => App\Http\Middleware\EnsurePlatformAdminMiddleware::class,
             'tenant.resolve' => App\Http\Middleware\ResolveTenantMiddleware::class,
             'tenant.access' => App\Http\Middleware\EnsureTenantAccessMiddleware::class,
+            'tenant.owner' => App\Http\Middleware\EnsureTenantOwnerMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

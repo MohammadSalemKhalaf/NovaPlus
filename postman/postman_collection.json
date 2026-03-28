@@ -3,7 +3,7 @@
     "_postman_id": "b2d9b84b-0f2d-4f10-8a4b-9a0b0c2db1a0",
     "name": "NovaPlus Phase 1 - Admin API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Clean flow: Auth, Admin Flow, Owner Flow"
+    "description": "Cleaned and domain-grouped flow: Auth, Admin, Owner, Public, QA"
   },
   "item": [
     {
@@ -113,10 +113,46 @@
       ]
     },
     {
-      "name": "Admin Flow",
+      "name": "Admin / Owner",
       "item": [
         {
-          "name": "Onboard Owner",
+          "name": "Get Business Types",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/public/business-types",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "public",
+                "business-types"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('Data exists', function () { pm.expect(json.data).to.not.equal(undefined); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Onboarding Owner",
           "request": {
             "method": "POST",
             "header": [
@@ -174,7 +210,7 @@
           ]
         },
         {
-          "name": "Create Subscription Code",
+          "name": "Create Activation Code",
           "request": {
             "method": "POST",
             "header": [
@@ -228,7 +264,7 @@
           ]
         },
         {
-          "name": "Redeem Subscription Code",
+          "name": "Redeem Tenant + Owner",
           "request": {
             "method": "POST",
             "header": [
@@ -285,770 +321,668 @@
       ]
     },
     {
-      "name": "Owner Flow",
+      "name": "Owner Catalog",
       "item": [
         {
-          "name": "Create Category (Optional)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{owner_token}}"
-              },
-              {
-                "key": "X-Tenant-ID",
-                "value": "{{owner_tenant_id}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"parent_id\": null,\n  \"name\": \"Optional Category {{$timestamp}}\",\n  \"slug\": \"optional-category-{{$timestamp}}\",\n  \"description\": \"Optional category\",\n  \"sort_order\": 1,\n  \"status\": \"active\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/categories",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "catalog",
-                "categories"
-              ]
-            }
-          },
-          "event": [
+          "name": "Categories",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.environment.set('category_id', String(json.data.category.id));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Create Item (Category Nullable)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{owner_token}}"
-              },
-              {
-                "key": "X-Tenant-ID",
-                "value": "{{owner_tenant_id}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"category_id\": null,\n  \"name\": \"Owner Item {{$timestamp}}\",\n  \"slug\": \"owner-item-{{$timestamp}}\",\n  \"short_description\": \"Simple item\",\n  \"long_description\": \"No category required\",\n  \"item_type\": \"product\",\n  \"status\": \"active\",\n  \"visibility\": \"public\",\n  \"primary_image_id\": null,\n  \"sort_order\": 1\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}"
+                  },
+                  {
+                    "key": "X-Tenant-ID",
+                    "value": "{{owner_tenant_id}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"parent_id\": null,\n  \"name\": \"Owner Catalog Category {{$timestamp}}\",\n  \"slug\": \"owner-catalog-category-{{$timestamp}}\",\n  \"description\": \"Created from owner catalog endpoint\",\n  \"sort_order\": 1,\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/owner/catalog/categories",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "owner",
+                    "catalog",
+                    "categories"
+                  ]
                 }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "catalog",
-                "items"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.environment.set('item_id', String(json.data.item.id));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Set Active Price",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
               },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{owner_token}}"
-              },
-              {
-                "key": "X-Tenant-ID",
-                "value": "{{owner_tenant_id}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"currency_code\": \"USD\",\n  \"base_price_amount\": \"19.99\",\n  \"compare_at_price_amount\": null,\n  \"effective_from\": \"2026-03-27 10:00:00\",\n  \"effective_to\": null\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/prices/active",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "catalog",
-                "items",
-                "{{item_id}}",
-                "prices",
-                "active"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.environment.set('price_id', String(json.data.price.id));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Upload Image",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{owner_token}}"
-              },
-              {
-                "key": "X-Tenant-ID",
-                "value": "{{owner_tenant_id}}"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
+              "event": [
                 {
-                  "key": "image",
-                  "type": "file",
-                  "src": ""
-                },
-                {
-                  "key": "alt_text",
-                  "type": "text",
-                  "value": "Owner image"
-                },
-                {
-                  "key": "sort_order",
-                  "type": "text",
-                  "value": "1"
-                },
-                {
-                  "key": "is_primary",
-                  "type": "text",
-                  "value": "true"
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Category object exists', function () { pm.expect(json.data.category).to.be.an('object'); });",
+                      "pm.environment.set('owner_catalog_category_id', String(json.data.category.id));"
+                    ]
+                  }
                 }
               ]
             },
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/images",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "catalog",
-                "items",
-                "{{item_id}}",
-                "images"
-              ]
-            }
-          },
-          "event": [
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.environment.set('image_id', String(json.data.image.id));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "GET Owner List Items",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
+              "name": "List",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}"
+                  },
+                  {
+                    "key": "X-Tenant-ID",
+                    "value": "{{owner_tenant_id}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/owner/catalog/categories?per_page=15",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "owner",
+                    "catalog",
+                    "categories"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "15"
+                    }
+                  ]
+                }
               },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{owner_token}}"
-              },
-              {
-                "key": "X-Tenant-ID",
-                "value": "{{owner_tenant_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "catalog",
-                "items"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "pm.test('Has data', function () {",
-                  "  const json = pm.response.json();",
-                  "  pm.expect(json.data).to.be.an('array');",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "GET Owner Filter Items by Category",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{owner_token}}"
-              },
-              {
-                "key": "X-Tenant-ID",
-                "value": "{{owner_tenant_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items?category_id={{category_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "catalog",
-                "items"
-              ],
-              "query": [
+              "event": [
                 {
-                  "key": "category_id",
-                  "value": "{{category_id}}"
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Categories list exists', function () { pm.expect(json.data.categories).to.be.an('array'); });"
+                    ]
+                  }
                 }
               ]
-            }
-          },
-          "event": [
+            },
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "pm.test('Has data', function () {",
-                  "  const json = pm.response.json();",
-                  "  pm.expect(json.data).to.be.an('array');",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "GET Owner Search Items",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
+              "name": "Show",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}"
+                  },
+                  {
+                    "key": "X-Tenant-ID",
+                    "value": "{{owner_tenant_id}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/owner/catalog/categories/{{owner_catalog_category_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "owner",
+                    "catalog",
+                    "categories",
+                    "{{owner_catalog_category_id}}"
+                  ]
+                }
               },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{owner_token}}"
-              },
-              {
-                "key": "X-Tenant-ID",
-                "value": "{{owner_tenant_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/items?search=cola",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "catalog",
-                "items"
-              ],
-              "query": [
+              "event": [
                 {
-                  "key": "search",
-                  "value": "cola"
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Category id matches', function () { pm.expect(String(json.data.category.id)).to.eql(String(pm.environment.get('owner_catalog_category_id'))); });"
+                    ]
+                  }
                 }
               ]
-            }
-          },
-          "event": [
+            },
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "pm.test('Has data', function () {",
-                  "  const json = pm.response.json();",
-                  "  pm.expect(json.data).to.be.an('array');",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "GET Owner Categories",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{owner_token}}"
-              },
-              {
-                "key": "X-Tenant-ID",
-                "value": "{{owner_tenant_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/admin/catalog/categories",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "catalog",
-                "categories"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "pm.test('Has data', function () {",
-                  "  const json = pm.response.json();",
-                  "  pm.expect(json.data).to.be.an('array');",
-                  "});"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Public Catalog",
-      "item": [
-        {
-          "name": "Public Categories",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/public/catalog/{{public_tenant_slug}}/categories?per_page=10&sort=name&direction=asc",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "public",
-                "catalog",
-                "{{public_tenant_slug}}",
-                "categories"
-              ],
-              "query": [
-                {
-                  "key": "per_page",
-                  "value": "10"
+              "name": "Update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}"
+                  },
+                  {
+                    "key": "X-Tenant-ID",
+                    "value": "{{owner_tenant_id}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Owner Category Updated {{$timestamp}}\",\n  \"description\": \"Updated from owner endpoint\",\n  \"sort_order\": 2\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
+                "url": {
+                  "raw": "{{base_url}}/owner/catalog/categories/{{owner_catalog_category_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "owner",
+                    "catalog",
+                    "categories",
+                    "{{owner_catalog_category_id}}"
+                  ]
+                }
+              },
+              "event": [
                 {
-                  "key": "sort",
-                  "value": "name"
-                },
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Updated name exists', function () { pm.expect(json.data.category.name).to.contain('Updated'); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Delete",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}"
+                  },
+                  {
+                    "key": "X-Tenant-ID",
+                    "value": "{{owner_tenant_id}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/owner/catalog/categories/{{owner_catalog_category_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "owner",
+                    "catalog",
+                    "categories",
+                    "{{owner_catalog_category_id}}"
+                  ]
+                }
+              },
+              "event": [
                 {
-                  "key": "direction",
-                  "value": "asc"
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Deleted true', function () { pm.expect(json.data.deleted).to.eql(true); });"
+                    ]
+                  }
                 }
               ]
             }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data is array', function () { pm.expect(Array.isArray(json.data)).to.eql(true); });",
-                  "pm.test('Pagination exists', function () { pm.expect(json.meta).to.have.property('pagination'); });"
-                ]
-              }
-            }
           ]
         },
         {
-          "name": "Public Items",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/public/catalog/{{public_tenant_slug}}/items?per_page=10&sort=latest",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "public",
-                "catalog",
-                "{{public_tenant_slug}}",
-                "items"
-              ],
-              "query": [
-                {
-                  "key": "per_page",
-                  "value": "10"
+          "name": "Items",
+          "item": [
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}"
+                  },
+                  {
+                    "key": "X-Tenant-ID",
+                    "value": "{{owner_tenant_id}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"category_id\": {{owner_catalog_category_id}},\n  \"name\": \"Owner Catalog Item {{$timestamp}}\",\n  \"slug\": \"owner-catalog-item-{{$timestamp}}\",\n  \"short_description\": \"Created from owner endpoint\",\n  \"long_description\": \"Long description owner endpoint\",\n  \"item_type\": \"product\",\n  \"status\": \"active\",\n  \"visibility\": \"public\",\n  \"primary_image_id\": null,\n  \"sort_order\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
+                "url": {
+                  "raw": "{{base_url}}/owner/catalog/items",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "owner",
+                    "catalog",
+                    "items"
+                  ]
+                }
+              },
+              "event": [
                 {
-                  "key": "sort",
-                  "value": "latest"
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Item object exists', function () { pm.expect(json.data.item).to.be.an('object'); });",
+                      "pm.environment.set('owner_catalog_item_id', String(json.data.item.id));"
+                    ]
+                  }
                 }
               ]
-            }
-          },
-          "event": [
+            },
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data is array', function () { pm.expect(Array.isArray(json.data)).to.eql(true); });",
-                  "pm.test('Pagination exists', function () { pm.expect(json.meta).to.have.property('pagination'); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Public Items By Category",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/public/catalog/{{public_tenant_slug}}/items?category_id={{category_id}}&per_page=10",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "public",
-                "catalog",
-                "{{public_tenant_slug}}",
-                "items"
-              ],
-              "query": [
+              "name": "List",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}"
+                  },
+                  {
+                    "key": "X-Tenant-ID",
+                    "value": "{{owner_tenant_id}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/owner/catalog/items?per_page=15",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "owner",
+                    "catalog",
+                    "items"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "15"
+                    }
+                  ]
+                }
+              },
+              "event": [
                 {
-                  "key": "category_id",
-                  "value": "{{category_id}}"
-                },
-                {
-                  "key": "per_page",
-                  "value": "10"
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Items list exists', function () { pm.expect(json.data.items).to.be.an('array'); });"
+                    ]
+                  }
                 }
               ]
-            }
-          },
-          "event": [
+            },
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data is array', function () { pm.expect(Array.isArray(json.data)).to.eql(true); });",
-                  "pm.test('Pagination exists', function () { pm.expect(json.meta).to.have.property('pagination'); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Public Items Search",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/public/catalog/{{public_tenant_slug}}/items?search=cola&per_page=10",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "public",
-                "catalog",
-                "{{public_tenant_slug}}",
-                "items"
-              ],
-              "query": [
+              "name": "Show",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}"
+                  },
+                  {
+                    "key": "X-Tenant-ID",
+                    "value": "{{owner_tenant_id}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/owner/catalog/items/{{owner_catalog_item_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "owner",
+                    "catalog",
+                    "items",
+                    "{{owner_catalog_item_id}}"
+                  ]
+                }
+              },
+              "event": [
                 {
-                  "key": "search",
-                  "value": "cola"
-                },
-                {
-                  "key": "per_page",
-                  "value": "10"
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Item id matches', function () { pm.expect(String(json.data.item.id)).to.eql(String(pm.environment.get('owner_catalog_item_id'))); });"
+                    ]
+                  }
                 }
               ]
-            }
-          },
-          "event": [
+            },
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data is array', function () { pm.expect(Array.isArray(json.data)).to.eql(true); });",
-                  "pm.test('Pagination exists', function () { pm.expect(json.meta).to.have.property('pagination'); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Public Expired Subscription Denied",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/public/catalog/{{expired_tenant_slug}}/items",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "public",
-                "catalog",
-                "{{expired_tenant_slug}}",
-                "items"
+              "name": "Update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}"
+                  },
+                  {
+                    "key": "X-Tenant-ID",
+                    "value": "{{owner_tenant_id}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Owner Item Updated {{$timestamp}}\",\n  \"short_description\": \"Updated short description\",\n  \"visibility\": \"hidden\",\n  \"sort_order\": 2\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/owner/catalog/items/{{owner_catalog_item_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "owner",
+                    "catalog",
+                    "items",
+                    "{{owner_catalog_item_id}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Updated item name exists', function () { pm.expect(json.data.item.name).to.contain('Updated'); });"
+                    ]
+                  }
+                }
               ]
-            }
-          },
-          "event": [
+            },
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 403', function () { pm.response.to.have.status(403); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success false', function () { pm.expect(json.success).to.eql(false); });",
-                  "pm.test('Message subscription expired', function () { pm.expect(json.message).to.eql('Subscription expired'); });",
-                  "pm.test('Data is array', function () { pm.expect(Array.isArray(json.data)).to.eql(true); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Public Inactive Tenant Denied",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/public/catalog/{{inactive_tenant_slug}}/items",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "public",
-                "catalog",
-                "{{inactive_tenant_slug}}",
-                "items"
+              "name": "Delete",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}"
+                  },
+                  {
+                    "key": "X-Tenant-ID",
+                    "value": "{{owner_tenant_id}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/owner/catalog/items/{{owner_catalog_item_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "owner",
+                    "catalog",
+                    "items",
+                    "{{owner_catalog_item_id}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Deleted true', function () { pm.expect(json.data.deleted).to.eql(true); });"
+                    ]
+                  }
+                }
               ]
-            }
-          },
-          "event": [
+            },
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 403', function () { pm.response.to.have.status(403); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success false', function () { pm.expect(json.success).to.eql(false); });",
-                  "pm.test('Message tenant inactive', function () { pm.expect(json.message).to.eql('Tenant is inactive'); });",
-                  "pm.test('Data is array', function () { pm.expect(Array.isArray(json.data)).to.eql(true); });"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Business Types",
-      "item": [
-        {
-          "name": "Public Business Types",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/public/business-types",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "public",
-                "business-types"
+              "name": "Upload Photo",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}"
+                  },
+                  {
+                    "key": "X-Tenant-ID",
+                    "value": "{{owner_tenant_id}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "image",
+                      "type": "file",
+                      "src": ""
+                    },
+                    {
+                      "key": "alt_text",
+                      "type": "text",
+                      "value": "Owner image"
+                    },
+                    {
+                      "key": "sort_order",
+                      "type": "text",
+                      "value": "1"
+                    },
+                    {
+                      "key": "is_primary",
+                      "type": "text",
+                      "value": "true"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/images",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "catalog",
+                    "items",
+                    "{{item_id}}",
+                    "images"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.environment.set('image_id', String(json.data.image.id));"
+                    ]
+                  }
+                }
               ]
-            }
-          },
-          "event": [
+            },
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data exists', function () { pm.expect(json.data).to.not.equal(undefined); });"
-                ]
-              }
+              "name": "Add Price",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}"
+                  },
+                  {
+                    "key": "X-Tenant-ID",
+                    "value": "{{owner_tenant_id}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currency_code\": \"USD\",\n  \"base_price_amount\": \"19.99\",\n  \"compare_at_price_amount\": null,\n  \"effective_from\": \"2026-03-27 10:00:00\",\n  \"effective_to\": null\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/catalog/items/{{item_id}}/prices/active",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "catalog",
+                    "items",
+                    "{{item_id}}",
+                    "prices",
+                    "active"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.environment.set('price_id', String(json.data.price.id));"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         }
@@ -1058,7 +992,7 @@
       "name": "Public Stores",
       "item": [
         {
-          "name": "List Stores",
+          "name": "List",
           "request": {
             "method": "GET",
             "header": [
@@ -1100,53 +1034,7 @@
           ]
         },
         {
-          "name": "List Stores By Business Type",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/public/stores?business_type_id={{business_type_id}}&per_page=10",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "public",
-                "stores"
-              ],
-              "query": [
-                {
-                  "key": "business_type_id",
-                  "value": "{{business_type_id}}"
-                },
-                {
-                  "key": "per_page",
-                  "value": "10"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data exists', function () { pm.expect(json.data).to.not.equal(undefined); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Search Stores",
+          "name": "Search",
           "request": {
             "method": "GET",
             "header": [
@@ -1192,7 +1080,7 @@
           ]
         },
         {
-          "name": "Store Details",
+          "name": "Show",
           "request": {
             "method": "GET",
             "header": [
@@ -1227,6 +1115,52 @@
               }
             }
           ]
+        },
+        {
+          "name": "Filter by Business Type",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/public/stores?business_type_id={{business_type_id}}&per_page=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "public",
+                "stores"
+              ],
+              "query": [
+                {
+                  "key": "business_type_id",
+                  "value": "{{business_type_id}}"
+                },
+                {
+                  "key": "per_page",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('Data exists', function () { pm.expect(json.data).to.not.equal(undefined); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -1234,7 +1168,7 @@
       "name": "Public Cart",
       "item": [
         {
-          "name": "Add Item To Cart",
+          "name": "Add Item",
           "request": {
             "method": "POST",
             "header": [
@@ -1382,7 +1316,7 @@
           ]
         },
         {
-          "name": "Remove Cart Item",
+          "name": "Remove Item",
           "request": {
             "method": "DELETE",
             "header": [
@@ -1428,7 +1362,7 @@
           ]
         },
         {
-          "name": "Clear Cart",
+          "name": "Clear",
           "request": {
             "method": "POST",
             "header": [
@@ -1476,6 +1410,229 @@
                   "const json = pm.response.json();",
                   "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
                   "pm.test('Clear success message', function () { pm.expect(json.message).to.contain('cleared'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "QA / Test Flows",
+      "item": [
+        {
+          "name": "Add Item Flow",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{device_id}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item_id\": {{item_id}},\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/public/cart/items?flow=multi-store",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "public",
+                "cart",
+                "items"
+              ],
+              "query": [
+                {
+                  "key": "flow",
+                  "value": "multi-store"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('Cart payload exists', function () { pm.expect(json.data.cart).to.be.an('object'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Cart Flow",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{device_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/public/cart?flow=multi-store",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "public",
+                "cart"
+              ],
+              "query": [
+                {
+                  "key": "flow",
+                  "value": "multi-store"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Has totals subtotal', function () { pm.expect(json.data.totals).to.have.property('subtotal'); });",
+                  "pm.test('Items array exists', function () { pm.expect(json.data.items).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Checkout Flow",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-ID",
+                "value": "{{device_id}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/public/cart/checkout-whatsapp?flow=checkout-whatsapp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "public",
+                "cart",
+                "checkout-whatsapp"
+              ],
+              "query": [
+                {
+                  "key": "flow",
+                  "value": "checkout-whatsapp"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Stores payload exists', function () { pm.expect(json.data.stores).to.be.an('array'); });",
+                  "pm.test('WhatsApp URL exists', function () { pm.expect(json.data.whatsapp_url).to.be.a('string'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cascade Delete Flow",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}"
+              },
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{owner_tenant_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/owner/catalog/categories/{{owner_catalog_category_id}}?flow=category-cascade-delete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "owner",
+                "catalog",
+                "categories",
+                "{{owner_catalog_category_id}}"
+              ],
+              "query": [
+                {
+                  "key": "flow",
+                  "value": "category-cascade-delete"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('Deleted true', function () { pm.expect(json.data.deleted).to.eql(true); });"
                 ]
               }
             }

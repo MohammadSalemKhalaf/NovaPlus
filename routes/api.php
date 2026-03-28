@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\TenantUserController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Owner\CategoryController as OwnerCategoryController;
+use App\Http\Controllers\Owner\ItemController as OwnerItemController;
 use App\Http\Controllers\Public\BusinessTypeController;
 use App\Http\Controllers\Public\CartController;
 use App\Http\Controllers\Public\CatalogController as LegacyPublicCatalogController;
@@ -73,6 +75,22 @@ Route::prefix('v1/admin/catalog')
         Route::post('items/{item}/images', [ItemImageController::class, 'store']);
         Route::put('items/{item}/images/{image}/primary', [ItemImageController::class, 'setPrimary']);
         Route::delete('items/{item}/images/{image}', [ItemImageController::class, 'destroy']);
+    });
+
+Route::prefix('v1/owner/catalog')
+    ->middleware(['auth:sanctum', 'tenant.resolve', 'tenant.access', 'tenant.owner'])
+    ->group(function (): void {
+        Route::get('categories', [OwnerCategoryController::class, 'index']);
+        Route::post('categories', [OwnerCategoryController::class, 'store']);
+        Route::get('categories/{category}', [OwnerCategoryController::class, 'show']);
+        Route::put('categories/{category}', [OwnerCategoryController::class, 'update']);
+        Route::delete('categories/{category}', [OwnerCategoryController::class, 'destroy']);
+
+        Route::get('items', [OwnerItemController::class, 'index']);
+        Route::post('items', [OwnerItemController::class, 'store']);
+        Route::get('items/{item}', [OwnerItemController::class, 'show']);
+        Route::put('items/{item}', [OwnerItemController::class, 'update']);
+        Route::delete('items/{item}', [OwnerItemController::class, 'destroy']);
     });
 
 Route::prefix('v1/public')->group(function (): void {

@@ -21,21 +21,13 @@ class CartController extends Controller
     public function show(ShowCartRequest $request): JsonResponse
     {
         $deviceId = $this->getDeviceIdOrFail($request);
-        $cart = $this->cartService->getActiveCart($deviceId);
+        $cart = $this->cartService->showCart($deviceId);
 
-        if ($cart === null) {
+        if ($cart['id'] === null) {
             return response()->json([
                 'success' => true,
                 'message' => 'Cart is empty.',
-                'data' => [
-                    'id' => null,
-                    'device_id' => $deviceId,
-                    'store' => null,
-                    'items' => [],
-                    'totals' => [
-                        'subtotal' => 0.0,
-                    ],
-                ],
+                'data' => $cart,
                 'meta' => (object) [],
             ]);
         }
@@ -43,7 +35,7 @@ class CartController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Cart fetched successfully.',
-            'data' => $this->formatCart($cart),
+            'data' => $cart,
             'meta' => (object) [],
         ]);
     }
@@ -98,7 +90,7 @@ class CartController extends Controller
             'success' => true,
             'message' => 'Item removed from cart successfully.',
             'data' => [
-                'cart' => $this->formatCart($cart),
+                'cart' => $cart,
             ],
             'meta' => (object) [],
         ]);

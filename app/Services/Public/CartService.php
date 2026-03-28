@@ -7,51 +7,25 @@ use App\Models\CartItem;
 use App\Models\Item;
 use App\Models\ItemPrice;
 use App\Models\Tenant;
+use App\Repositories\Catalog\CartRepository;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 class CartService
 {
-    public function __construct(private readonly PublicTenantAccessService $tenantAccessService)
+    public function __construct(
+        private readonly PublicTenantAccessService $tenantAccessService,
+        private readonly CartRepository $cartRepository,
+    )
     {
     }
 
-    public function getOrCreateCart(string $deviceId, ?Tenant $tenant = null): Cart
+    public function getOrCreateCart(string $deviceId, int $tenantId): Cart
     {
-        $cart = Cart::query()
-            ->where('carts.device_id', $deviceId)
-            ->where('carts.status', 'active')
-            ->orderByDesc('carts.id')
-            ->first();
-
-        if ($cart !== null) {
-            if ($tenant !== null && (int) $cart->tenant_id !== (int) $tenant->id) {
-                $this->fail([
-                    'success' => false,
-                    'message' => 'Cart belongs to different store',
-                    'data' => [],
-                    'meta' => (object) [],
-                ], 422);
-            }
-
-            return $cart;
-        }
-
-        if ($tenant === null) {
-            return Cart::query()->firstOrCreate([
-                'device_id' => $deviceId,
-            ], [
-                'status' => 'active',
-            ]);
-        }
-
-        return Cart::query()->firstOrCreate([
-            'tenant_id' => $tenant->id,
-            'device_id' => $deviceId,
-            'status' => 'active',
-        ]);
+        return $this->cartRepository->firstOrCreateActiveByDeviceAndTenant($deviceId, $tenantId);
     }
 
     /**
@@ -129,41 +103,28 @@ class CartService
         }
 
         return DB::transaction(function () use ($deviceId, $item, $quantity, $activePrice): array {
-            $cart = $this->getOrCreateCart($deviceId, $item->tenant);
+            $cart = $this->getOrCreateCart($deviceId, (int) $item->tenant_id);
 
-            if ($cart->tenant_id && (int) $cart->tenant_id !== (int) $item->tenant_id) {
-                $this->fail([
-                    'success' => false,
-                    'message' => 'Cart belongs to different store',
-                    'data' => [],
-                    'meta' => (object) [],
-                ], 422);
-            }
+            $cartItem = $this->cartRepository->findCartItemForUpdate((int) $cart->id, (int) $item->id);
 
-            if (!$cart->tenant_id) {
-                $cart->tenant_id = $item->tenant_id;
-                $cart->save();
-                Log::info('Cart auto-assigned tenant', [
-                    'device_id' => $deviceId,
-                    'tenant_id' => $item->tenant_id,
-                ]);
-            }
-
-            CartItem::updateOrCreate(
-                [
+            if ($cartItem === null) {
+                CartItem::query()->create([
                     'cart_id' => $cart->id,
                     'device_id' => $deviceId,
                     'item_id' => $item->id,
-                ],
-                [
-                    'quantity' => DB::raw('CASE WHEN quantity IS NULL THEN '.(int) $quantity.' ELSE quantity + '.(int) $quantity.' END'),
+                    'quantity' => $quantity,
                     'unit_price_snapshot' => $activePrice?->base_price_amount ?? 0,
-                ]
-            );
+                ]);
+            } else {
+                $cartItem->quantity = (int) $cartItem->quantity + $quantity;
+                $cartItem->unit_price_snapshot = $activePrice?->base_price_amount ?? 0;
+                $cartItem->save();
+            }
 
             Log::info('Cart Debug', [
                 'device_id' => $deviceId,
                 'cart_id' => $cart->id,
+                'tenant_id' => $item->tenant_id,
                 'item_id' => $item->id,
                 'quantity_added' => $quantity,
             ]);
@@ -174,44 +135,31 @@ class CartService
         });
     }
 
-    public function getActiveCart(string $deviceId): ?Cart
+    public function getActiveCart(string $deviceId, int $tenantId): ?Cart
     {
-        return Cart::query()
-            ->where('carts.device_id', $deviceId)
-            ->where('carts.status', 'active')
-            ->with([
-                'tenant' => function ($query): void {
-                    $query->select([
-                        'tenants.id',
-                        'tenants.name',
-                        'tenants.slug',
-                        'tenants.status',
-                        'tenants.whatsapp_number',
-                    ]);
-                },
-                'items' => function ($query): void {
-                    $query->select([
-                        'cart_items.id',
-                        'cart_items.cart_id',
-                        'cart_items.device_id',
-                        'cart_items.item_id',
-                        'cart_items.quantity',
-                        'cart_items.unit_price_snapshot',
-                    ]);
-                },
-                'items.item' => function ($query): void {
-                    $query->select([
-                        'items.id',
-                        'items.tenant_id',
-                        'items.name',
-                        'items.slug',
-                        'items.status',
-                        'items.visibility',
-                    ]);
-                },
-            ])
-                ->orderByDesc('carts.id')
-            ->first();
+        return $this->cartRepository->findActiveByDeviceAndTenant($deviceId, $tenantId);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function showCart(string $deviceId): array
+    {
+        $carts = $this->cartRepository->getActiveCartsByDevice($deviceId);
+
+        if ($carts->isEmpty()) {
+            return [
+                'id' => null,
+                'device_id' => $deviceId,
+                'store' => null,
+                'items' => [],
+                'totals' => [
+                    'subtotal' => 0.0,
+                ],
+            ];
+        }
+
+        return $this->formatMergedCartPayload($deviceId, $carts);
     }
 
     /**
@@ -219,9 +167,9 @@ class CartService
      */
     public function checkoutWhatsApp(string $deviceId): array
     {
-        $cart = $this->getActiveCart($deviceId);
+        $carts = $this->cartRepository->getActiveCartsByDevice($deviceId);
 
-        if ($cart === null || $cart->tenant === null) {
+        if ($carts->isEmpty()) {
             $this->fail([
                 'success' => false,
                 'message' => 'Cart not found for this device_id',
@@ -230,7 +178,19 @@ class CartService
             ], 404);
         }
 
-        if (!$this->tenantAccessService->isActiveSubscribedTenant($cart->tenant)) {
+        /** @var Cart $primaryCart */
+        $primaryCart = $carts->first();
+
+        if ($primaryCart->tenant === null) {
+            $this->fail([
+                'success' => false,
+                'message' => 'Cart not found for this device_id',
+                'data' => [],
+                'meta' => (object) [],
+            ], 404);
+        }
+
+        if (!$this->tenantAccessService->isActiveSubscribedTenant($primaryCart->tenant)) {
             $this->fail([
                 'success' => false,
                 'message' => 'Store is not available.',
@@ -239,7 +199,7 @@ class CartService
             ], 403);
         }
 
-        if (empty($cart->tenant->whatsapp_number)) {
+        if (empty($primaryCart->tenant->whatsapp_number)) {
             $this->fail([
                 'success' => false,
                 'message' => 'Store WhatsApp is not configured.',
@@ -248,7 +208,9 @@ class CartService
             ], 422);
         }
 
-        if ($cart->items->isEmpty()) {
+        $allItems = $carts->flatMap(static fn (Cart $cart) => $cart->items);
+
+        if ($allItems->isEmpty()) {
             $this->fail([
                 'success' => false,
                 'message' => 'Cart is empty.',
@@ -257,13 +219,13 @@ class CartService
             ], 422);
         }
 
-        $groupedByTenant = $cart->items->groupBy(static fn ($cartItem) => (string) ($cartItem->item?->tenant_id ?? $cart->tenant_id));
+        $groupedByTenant = $allItems->groupBy(static fn ($cartItem) => (string) ($cartItem->item?->tenant_id ?? $primaryCart->tenant_id));
 
         $storePayloads = [];
 
         foreach ($groupedByTenant as $tenantId => $tenantItems) {
             $tenantIdInt = (int) $tenantId;
-            $tenant = $tenantIdInt === (int) $cart->tenant_id ? $cart->tenant : Tenant::query()->find($tenantIdInt);
+            $tenant = $tenantIdInt === (int) $primaryCart->tenant_id ? $primaryCart->tenant : Tenant::query()->find($tenantIdInt);
 
             if ($tenant === null || !$this->tenantAccessService->isActiveSubscribedTenant($tenant)) {
                 $this->fail([
@@ -324,42 +286,90 @@ class CartService
             'whatsapp_url' => $first['whatsapp_url'],
             'message_preview' => $first['message_preview'],
             'stores' => $storePayloads,
-            'cart' => $cart,
+            'cart' => $primaryCart,
         ];
     }
 
-    public function removeItem(string $deviceId, int $itemId): Cart
+    /**
+     * @return array<string, mixed>
+     */
+    public function removeItem(string $deviceId, int $itemId): array
     {
-        $cart = $this->getOrCreateCart($deviceId);
+        $item = Item::query()
+            ->select(['id', 'tenant_id'])
+            ->whereKey($itemId)
+            ->first();
 
-        Log::info('Remove item from cart', [
-            'device_id' => $deviceId,
-            'cart_id' => $cart->id,
-            'item_id' => $itemId,
-        ]);
+        if ($item !== null) {
+            $cart = $this->cartRepository->findActiveByDeviceAndTenant($deviceId, (int) $item->tenant_id);
 
-        CartItem::query()
-            ->where('cart_items.cart_id', $cart->id)
-            ->where('cart_items.device_id', $deviceId)
-            ->where('cart_items.item_id', $itemId)
-            ->delete();
+            if ($cart !== null) {
+                Log::info('Remove item from cart', [
+                    'device_id' => $deviceId,
+                    'cart_id' => $cart->id,
+                    'tenant_id' => $item->tenant_id,
+                    'item_id' => $itemId,
+                ]);
 
-        return $cart->fresh(['tenant', 'items.item.activePrice', 'items.item.primaryImage']);
+                $this->cartRepository->deleteItemFromCart((int) $cart->id, $deviceId, $itemId);
+            }
+        }
+
+        return $this->showCart($deviceId);
     }
 
     public function clear(string $deviceId): void
     {
-        $cart = $this->getOrCreateCart($deviceId);
+        $carts = $this->cartRepository->getActiveCartsByDevice($deviceId);
 
-        Log::info('Clear cart', [
+        foreach ($carts as $cart) {
+            Log::info('Clear cart', [
+                'device_id' => $deviceId,
+                'cart_id' => $cart->id,
+                'tenant_id' => $cart->tenant_id,
+            ]);
+
+            $this->cartRepository->clearCart((int) $cart->id, $deviceId);
+        }
+    }
+
+    /**
+     * @param Collection<int, Cart> $carts
+     * @return array<string, mixed>
+     */
+    private function formatMergedCartPayload(string $deviceId, Collection $carts): array
+    {
+        /** @var Cart $primary */
+        $primary = $carts->first();
+        $allItems = $carts->flatMap(static fn (Cart $cart) => $cart->items)->values();
+        $singleStore = $carts->pluck('tenant_id')->filter()->unique()->count() === 1;
+
+        return [
+            'id' => $primary->id,
             'device_id' => $deviceId,
-            'cart_id' => $cart->id,
-        ]);
+            'store' => $singleStore ? [
+                'id' => $primary->tenant?->id,
+                'name' => $primary->tenant?->name,
+                'slug' => $primary->tenant?->slug,
+            ] : null,
+            'items' => $allItems->map(static function ($cartItem): array {
+                $lineTotal = (float) $cartItem->unit_price_snapshot * (int) $cartItem->quantity;
 
-        CartItem::query()
-            ->where('cart_items.cart_id', $cart->id)
-            ->where('cart_items.device_id', $deviceId)
-            ->delete();
+                return [
+                    'id' => $cartItem->id,
+                    'item_id' => $cartItem->item_id,
+                    'item_name' => $cartItem->item?->name,
+                    'quantity' => (int) $cartItem->quantity,
+                    'unit_price_snapshot' => (float) $cartItem->unit_price_snapshot,
+                    'line_total' => $lineTotal,
+                ];
+            })->values()->all(),
+            'totals' => [
+                'subtotal' => (float) $allItems->sum(static function ($cartItem): float {
+                    return (float) $cartItem->unit_price_snapshot * (int) $cartItem->quantity;
+                }),
+            ],
+        ];
     }
 
     private function fail(array $payload, int $status): never
