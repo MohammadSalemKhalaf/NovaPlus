@@ -27,12 +27,17 @@ class SalesAgentController extends Controller
         }
 
         $salesAgent = $this->salesAgentService->create($request->validated(), $actor);
+        $roleAssigned = in_array('sales_agent', $salesAgent['roles'] ?? [], true);
 
         return response()->json([
             'success' => true,
             'message' => 'Sales agent created successfully.',
             'data' => [
                 'sales_agent' => $salesAgent,
+                'requested_role' => (string) $request->validated('role'),
+                'role_assignment' => [
+                    'sales_agent_assigned' => $roleAssigned,
+                ],
             ],
             'meta' => (object) [],
         ], 201);
@@ -194,7 +199,7 @@ class SalesAgentController extends Controller
             ], 401);
         }
 
-        if (!$user->isSuperAdmin()) {
+        if (!$user->roles()->where('slug', 'super_admin')->exists()) {
             return response()->json([
                 'success' => false,
                 'message' => 'You are not authorized to access this resource.',

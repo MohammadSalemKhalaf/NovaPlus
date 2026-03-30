@@ -5,8 +5,10 @@ namespace App\Services\Admin;
 use App\DTOs\Admin\SalesAgentDto;
 use App\Models\User;
 use App\Repositories\Admin\SalesAgentRepository;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class SalesAgentService
 {
@@ -36,16 +38,34 @@ class SalesAgentService
      */
     public function create(array $payload, User $createdBy): array
     {
-        $salesAgent = $this->salesAgentRepository->create([
-            'name' => $payload['name'],
-            'email' => $payload['email'],
-            'password_hash' => Hash::make((string) $payload['password']),
-            'status' => $payload['status'] ?? 'active',
-            'created_by' => $createdBy->id,
-        ]);
+        $primaryRoleSlug = (string) $payload['role'];
+        $primaryRoleId = $this->salesAgentRepository->findRoleIdBySlug($primaryRoleSlug);
+        $endUserRoleId = $this->salesAgentRepository->findRoleIdBySlug('end_user');
 
-        $this->salesAgentRepository->attachRoleBySlug($salesAgent, 'sales_agent');
-        $this->salesAgentRepository->attachRoleBySlug($salesAgent, 'end_user');
+        if ($primaryRoleId === null) {
+            throw ValidationException::withMessages([
+                'role' => ['Selected role is not configured in roles table.'],
+            ]);
+        }
+
+        $salesAgent = DB::transaction(function () use ($payload, $createdBy, $primaryRoleId, $endUserRoleId) {
+            $created = $this->salesAgentRepository->create([
+                'name' => $payload['name'],
+                'email' => $payload['email'],
+                'password_hash' => Hash::make((string) $payload['password']),
+                'status' => $payload['status'] ?? 'active',
+                'created_by' => $createdBy->id,
+            ]);
+
+            $roleIds = array_values(array_unique(array_filter([
+                $primaryRoleId,
+                $endUserRoleId,
+            ])));
+
+            $created->roles()->syncWithoutDetaching($roleIds);
+
+            return $created;
+        });
 
         $fresh = $this->salesAgentRepository->findById((int) $salesAgent->id);
 

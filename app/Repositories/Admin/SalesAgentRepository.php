@@ -79,6 +79,15 @@ class SalesAgentRepository
         }
     }
 
+    public function findRoleIdBySlug(string $slug): ?int
+    {
+        $roleId = Role::query()
+            ->where('slug', $slug)
+            ->value('id');
+
+        return $roleId !== null ? (int) $roleId : null;
+    }
+
     private function baseQuery(): Builder
     {
         return User::query()

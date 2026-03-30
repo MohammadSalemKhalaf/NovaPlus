@@ -31,6 +31,17 @@ class DevAuthTenantSeeder extends Seeder
             ],
         );
 
+        $salesAgent = User::query()->updateOrCreate(
+            ['email' => 'agent@novaplus.test'],
+            [
+                'name' => 'Test Sales Agent',
+                'password_hash' => Hash::make('password123'),
+                'status' => 'active',
+                'last_login_at' => null,
+                'email_verified_at' => null,
+            ],
+        );
+
         $owner = User::query()->updateOrCreate(
             ['email' => 'owner@novaplus.test'],
             [
@@ -93,7 +104,7 @@ class DevAuthTenantSeeder extends Seeder
         );
 
         $rolesBySlug = Role::query()
-            ->whereIn('slug', ['super_admin', 'store_owner', 'end_user'])
+            ->whereIn('slug', ['super_admin', 'sales_agent', 'store_owner', 'end_user'])
             ->pluck('id', 'slug');
 
         $ownerRoleIds = array_values(array_filter([
@@ -112,6 +123,15 @@ class DevAuthTenantSeeder extends Seeder
 
         if (!empty($adminRoleIds)) {
             $admin->roles()->syncWithoutDetaching($adminRoleIds);
+        }
+
+        $salesAgentRoleIds = array_values(array_filter([
+            $rolesBySlug['sales_agent'] ?? null,
+            $rolesBySlug['end_user'] ?? null,
+        ]));
+
+        if (!empty($salesAgentRoleIds)) {
+            $salesAgent->roles()->syncWithoutDetaching($salesAgentRoleIds);
         }
     }
 }
