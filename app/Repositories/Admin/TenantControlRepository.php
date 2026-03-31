@@ -139,6 +139,10 @@ class TenantControlRepository
                     DB::table('tenant_users')->where('user_id', $ownerId)->delete();
                 }
 
+                if (Schema::hasTable('user_roles') && Schema::hasColumn('user_roles', 'user_id')) {
+                    DB::table('user_roles')->where('user_id', $ownerId)->delete();
+                }
+
                 if (Schema::hasTable('personal_access_tokens') && Schema::hasColumn('personal_access_tokens', 'tokenable_id')) {
                     DB::table('personal_access_tokens')
                         ->where('tokenable_type', 'App\\Models\\User')

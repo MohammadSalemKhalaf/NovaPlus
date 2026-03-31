@@ -35,6 +35,7 @@ Route::prefix('v1/admin')->group(function (): void {
 
         Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('me', [AuthController::class, 'me']);
+            Route::put('profile', [AuthController::class, 'updateProfile']);
             Route::post('logout', [AuthController::class, 'logout']);
         });
     });

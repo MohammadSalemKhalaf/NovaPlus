@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             BusinessTypeSeeder::class,
             DevAuthTenantSeeder::class,
+            SubscriptionSeeder::class,
         ]);
     }
 }

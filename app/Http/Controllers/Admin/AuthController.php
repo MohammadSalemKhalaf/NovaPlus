@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LoginRequest;
+use App\Http\Requests\Admin\UpdateAdminProfileRequest;
 use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -143,6 +144,34 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Logout successful.',
             'data' => (object) [],
+            'meta' => (object) [],
+        ]);
+    }
+
+    public function updateProfile(UpdateAdminProfileRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $validated = $request->validated();
+
+        if (isset($validated['email'])) {
+            $user->update(['email' => $validated['email']]);
+        }
+
+        if (isset($validated['password'])) {
+            $user->update(['password_hash' => Hash::make($validated['password'])]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile updated successfully.',
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ],
+            ],
             'meta' => (object) [],
         ]);
     }
