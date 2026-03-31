@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\TenantControlController;
 use App\Http\Controllers\Admin\TenantUserController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Owner\CategoryController as OwnerCategoryController;
 use App\Http\Controllers\Owner\ItemController as OwnerItemController;
 use App\Http\Controllers\Owner\ProfileController as OwnerProfileController;
@@ -45,6 +46,12 @@ Route::prefix('v1/admin')->group(function (): void {
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::middleware('platform.admin')->group(function (): void {
             Route::post('users', [UserController::class, 'store']);
+            Route::prefix('users')->group(function (): void {
+                Route::get('/', [UserManagementController::class, 'index']);
+                Route::get('{user_id}', [UserManagementController::class, 'show'])->whereNumber('user_id');
+                Route::put('{user_id}', [UserManagementController::class, 'update'])->whereNumber('user_id');
+                Route::delete('{user_id}', [UserManagementController::class, 'destroy'])->whereNumber('user_id');
+            });
             Route::post('tenants', [TenantController::class, 'store']);
             Route::get('tenants', [TenantControlController::class, 'index']);
 
@@ -175,9 +182,11 @@ Route::prefix('v1/enduser')->group(function (): void {
         Route::post('login', [EndUserAuthController::class, 'login']);
 
         Route::middleware('auth:sanctum')->group(function (): void {
+            Route::get('me', [EndUserAuthController::class, 'me']);
             Route::post('logout', [EndUserAuthController::class, 'logout']);
             Route::get('profile', [EndUserAuthController::class, 'profile']);
             Route::put('profile', [EndUserAuthController::class, 'updateProfile']);
+            Route::delete('profile', [EndUserAuthController::class, 'destroyAccount']);
         });
     });
 
@@ -186,6 +195,7 @@ Route::prefix('v1/enduser')->group(function (): void {
             Route::get('/', [FavoritesController::class, 'index']);
             Route::post('/', [FavoritesController::class, 'store']);
             Route::get('check/{tenant_id}', [FavoritesController::class, 'check']);
+            Route::put('{tenant_id}', [FavoritesController::class, 'update'])->whereNumber('tenant_id');
             Route::delete('{tenant_id}', [FavoritesController::class, 'destroy']);
         });
 

@@ -19,8 +19,13 @@ class FavoritesService
     public function listFavorites(User $user, array $filters = []): LengthAwarePaginator
     {
         $favorites = $this->favoritesRepository->paginate($user, $filters);
+        $favorites->setCollection(
+            $favorites->getCollection()->map(
+                fn ($favorite): array => (new FavoriteStoreDto($favorite))->toArray()
+            )
+        );
 
-        return $favorites->through(fn($favorite) => new FavoriteStoreDto($favorite));
+        return $favorites;
     }
 
     /**
@@ -29,6 +34,17 @@ class FavoritesService
     public function addFavorite(User $user, int $tenantId, bool $notificationsOptIn = false): FavoriteStoreDto
     {
         $favorite = $this->favoritesRepository->favorite($user, $tenantId, $notificationsOptIn);
+        $favorite->loadMissing(['store']);
+
+        return new FavoriteStoreDto($favorite);
+    }
+
+    /**
+     * Update favorite store settings.
+     */
+    public function updateFavorite(User $user, int $tenantId, bool $notificationsOptIn): FavoriteStoreDto
+    {
+        $favorite = $this->favoritesRepository->updateFavorite($user, $tenantId, $notificationsOptIn);
         $favorite->loadMissing(['store']);
 
         return new FavoriteStoreDto($favorite);

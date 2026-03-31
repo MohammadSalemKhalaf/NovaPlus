@@ -4,6 +4,7 @@ namespace App\Http\Controllers\EndUser;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EndUser\FavoritesRequest;
+use App\Http\Requests\EndUser\UpdateFavoriteRequest;
 use App\Services\EndUser\FavoritesService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -98,6 +99,35 @@ class FavoritesController extends Controller
             'success' => true,
             'message' => 'Check completed',
             'data' => ['is_favorited' => $isFavorited],
+        ], 200);
+    }
+
+    /**
+     * Update favorite store settings.
+     * PUT /api/v1/enduser/favorites/{tenant_id}
+     */
+    public function update(UpdateFavoriteRequest $request, int $tenant_id): JsonResponse
+    {
+        $user = $request->user('sanctum');
+
+        if (!$this->favoritesService->isFavorited($user, $tenant_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Store is not in favorites',
+                'data' => null,
+            ], 404);
+        }
+
+        $favorite = $this->favoritesService->updateFavorite(
+            $user,
+            $tenant_id,
+            (bool) $request->validated('notifications_optin')
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Favorite store updated successfully',
+            'data' => $favorite->toArray(),
         ], 200);
     }
 }

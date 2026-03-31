@@ -87,6 +87,15 @@ class EndUserRepository
     }
 
     /**
+     * Delete end user account.
+     */
+    public function deleteAccount(User $user): void
+    {
+        $user->tokens()->delete();
+        $user->delete();
+    }
+
+    /**
      * Attach end_user role to user.
      */
     private function attachEndUserRole(User $user): void

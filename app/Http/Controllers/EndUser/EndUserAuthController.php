@@ -103,6 +103,15 @@ class EndUserAuthController extends Controller
     }
 
     /**
+     * Get authenticated user info.
+     * GET /api/v1/enduser/auth/me
+     */
+    public function me(Request $request): JsonResponse
+    {
+        return $this->profile($request);
+    }
+
+    /**
      * Update user profile.
      * PUT /api/v1/enduser/auth/profile
      */
@@ -115,6 +124,22 @@ class EndUserAuthController extends Controller
             'success' => true,
             'message' => 'Profile updated successfully',
             'data' => $profile->toArray(),
+        ], 200);
+    }
+
+    /**
+     * Delete user account.
+     * DELETE /api/v1/enduser/auth/profile
+     */
+    public function destroyAccount(Request $request): JsonResponse
+    {
+        $user = $request->user('sanctum');
+        $this->authService->deleteAccount($user);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Account deleted successfully',
+            'data' => null,
         ], 200);
     }
 }

@@ -70,6 +70,23 @@ class FavoritesRepository
     }
 
     /**
+     * Update favorite settings for a store.
+     */
+    public function updateFavorite(User $user, int $tenantId, bool $notificationsOptIn): UserFavoriteStore
+    {
+        $favorite = UserFavoriteStore::query()
+            ->where('user_id', $user->id)
+            ->where('tenant_id', $tenantId)
+            ->firstOrFail();
+
+        $favorite->update([
+            'notifications_optin' => $notificationsOptIn,
+        ]);
+
+        return $favorite->fresh();
+    }
+
+    /**
      * Remove store from favorites.
      */
     public function unfavorite(User $user, int $tenantId): bool

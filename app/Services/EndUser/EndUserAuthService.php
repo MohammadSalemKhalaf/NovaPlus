@@ -96,4 +96,12 @@ class EndUserAuthService
 
         return new EndUserDto($user);
     }
+
+    /**
+     * Delete user account.
+     */
+    public function deleteAccount(User $user): void
+    {
+        $this->userRepository->deleteAccount($user);
+    }
 }
