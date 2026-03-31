@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\TenantUserController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Owner\CategoryController as OwnerCategoryController;
 use App\Http\Controllers\Owner\ItemController as OwnerItemController;
+use App\Http\Controllers\Owner\ProfileController as OwnerProfileController;
 use App\Http\Controllers\Public\BusinessTypeController;
 use App\Http\Controllers\Public\CartController;
 use App\Http\Controllers\Public\CatalogController as LegacyPublicCatalogController;
@@ -142,6 +143,12 @@ Route::prefix('v1/owner/catalog')
         Route::delete('items/{item}', [OwnerItemController::class, 'destroy']);
     });
 
+Route::prefix('v1/owner')
+    ->middleware(['auth:sanctum', 'tenant.resolve', 'tenant.access', 'tenant.owner'])
+    ->group(function (): void {
+        Route::put('profile', [OwnerProfileController::class, 'updateProfile']);
+    });
+
 Route::prefix('v1/public')->group(function (): void {
     Route::get('business-types', [BusinessTypeController::class, 'index']);
 
@@ -151,6 +158,9 @@ Route::prefix('v1/public')->group(function (): void {
     Route::get('catalog/{tenant_slug}/categories', [PublicCatalogController::class, 'categories']);
     Route::get('catalog/{tenant_slug}/items', [PublicCatalogController::class, 'items']);
     Route::get('catalog/{tenant_slug}', [LegacyPublicCatalogController::class, 'show']);
+    Route::get('tenants/{tenant_id}/categories', [PublicCatalogController::class, 'categoriesByTenantId'])->whereNumber('tenant_id');
+    Route::get('tenants/{tenant_id}/items', [PublicCatalogController::class, 'itemsByTenantId'])->whereNumber('tenant_id');
+    Route::get('tenants/{tenant_id}/items/{item_id}', [PublicCatalogController::class, 'showItemByTenantId'])->whereNumber('tenant_id')->whereNumber('item_id');
 
     Route::get('cart', [CartController::class, 'show']);
     Route::post('cart/items', [CartController::class, 'addItem']);

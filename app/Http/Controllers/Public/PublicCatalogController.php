@@ -140,7 +140,7 @@ class PublicCatalogController extends Controller
                     'items.created_at',
                 ])
                 ->with([
-                    'category' => function (Builder $query) use ($tenant): void {
+                    'category' => function ($query) use ($tenant): void {
                         $query
                             ->where('categories.tenant_id', $tenant->id)
                             ->select([
@@ -148,7 +148,7 @@ class PublicCatalogController extends Controller
                                 'categories.name',
                             ]);
                     },
-                    'activePrice' => function (Builder $query) use ($tenant): void {
+                    'activePrice' => function ($query) use ($tenant): void {
                         $this->applyActivePriceConstraint($query, $tenant->id);
 
                         $query->select([
@@ -159,7 +159,7 @@ class PublicCatalogController extends Controller
                             'item_prices.base_price_amount',
                         ]);
                     },
-                    'primaryImage' => function (Builder $query) use ($tenant): void {
+                    'primaryImage' => function ($query) use ($tenant): void {
                         $query
                             ->where('item_images.tenant_id', $tenant->id)
                             ->select([
@@ -235,6 +235,204 @@ class PublicCatalogController extends Controller
         ]);
     }
 
+    public function categoriesByTenantId(Request $request, int $tenant_id): JsonResponse
+    {
+        $tenant = Tenant::query()->whereKey($tenant_id)->first();
+
+        if ($tenant === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tenant not found.',
+                'data' => [],
+                'meta' => (object) [],
+            ], 404);
+        }
+
+        if (($guardResponse = $this->ensureCatalogAccess($tenant)) !== null) {
+            return $guardResponse;
+        }
+
+        $perPage = max(1, min(100, $request->integer('per_page', 15)));
+
+        $categories = Category::query()
+            ->where('categories.tenant_id', $tenant->id)
+            ->where('categories.status', 'active')
+            ->select([
+                'categories.id',
+                'categories.name',
+                'categories.slug',
+            ])
+            ->orderBy('categories.id')
+            ->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Catalog categories fetched successfully.',
+            'data' => collect($categories->items())->map(fn (Category $category): array => [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+            ])->values()->all(),
+            'meta' => [
+                'pagination' => [
+                    'current_page' => $categories->currentPage(),
+                    'last_page' => $categories->lastPage(),
+                    'per_page' => $categories->perPage(),
+                    'total' => $categories->total(),
+                ],
+            ],
+        ]);
+    }
+
+    public function itemsByTenantId(Request $request, int $tenant_id): JsonResponse
+    {
+        $tenant = Tenant::query()->whereKey($tenant_id)->first();
+
+        if ($tenant === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tenant not found.',
+                'data' => [],
+                'meta' => (object) [],
+            ], 404);
+        }
+
+        if (($guardResponse = $this->ensureCatalogAccess($tenant)) !== null) {
+            return $guardResponse;
+        }
+
+        $perPage = max(1, min(100, $request->integer('per_page', 15)));
+        $categoryId = $request->integer('category_id');
+        $hasCategoryFilter = $request->filled('category_id');
+        $search = trim((string) $request->input('search', ''));
+
+        $items = Item::query()
+            ->where('items.tenant_id', $tenant->id)
+            ->where('items.status', 'active')
+            ->where('items.visibility', 'public')
+            ->when($hasCategoryFilter, function (Builder $query) use ($categoryId): void {
+                $query->where('items.category_id', $categoryId);
+            })
+            ->when($search !== '', function (Builder $query) use ($search): void {
+                $query->where('items.name', 'like', '%'.$search.'%');
+            })
+            ->with([
+                'category:id,name',
+                'activePrice' => function ($query) use ($tenant): void {
+                    $this->applyActivePriceConstraint($query, $tenant->id);
+                },
+                'primaryImage' => function ($query) use ($tenant): void {
+                    $query
+                        ->where('item_images.tenant_id', $tenant->id)
+                        ->select([
+                            'item_images.id',
+                            'item_images.item_id',
+                            'item_images.storage_path',
+                            'item_images.is_primary',
+                        ]);
+                },
+            ])
+            ->orderBy('items.id')
+            ->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => $items->total() === 0 ? 'No items found' : 'Catalog items fetched successfully.',
+            'data' => collect($items->items())->map(function (Item $item): array {
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'price' => $item->activePrice !== null ? [
+                        'amount' => $item->activePrice->base_price_amount,
+                        'currency' => $item->activePrice->currency_code,
+                    ] : null,
+                    'image' => $item->primaryImage?->storage_path,
+                    'category' => $item->category?->name,
+                ];
+            })->values()->all(),
+            'meta' => [
+                'pagination' => [
+                    'current_page' => $items->currentPage(),
+                    'last_page' => $items->lastPage(),
+                    'per_page' => $items->perPage(),
+                    'total' => $items->total(),
+                ],
+            ],
+        ]);
+    }
+
+    public function showItemByTenantId(int $tenant_id, int $item_id): JsonResponse
+    {
+        $tenant = Tenant::query()->whereKey($tenant_id)->first();
+
+        if ($tenant === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tenant not found.',
+                'data' => [],
+                'meta' => (object) [],
+            ], 404);
+        }
+
+        if (($guardResponse = $this->ensureCatalogAccess($tenant)) !== null) {
+            return $guardResponse;
+        }
+
+        $item = Item::query()
+            ->where('items.id', $item_id)
+            ->where('items.tenant_id', $tenant->id)
+            ->where('items.status', 'active')
+            ->where('items.visibility', 'public')
+            ->with([
+                'category:id,name',
+                'activePrice' => function ($query) use ($tenant): void {
+                    $this->applyActivePriceConstraint($query, $tenant->id);
+                },
+                'primaryImage' => function ($query) use ($tenant): void {
+                    $query
+                        ->where('item_images.tenant_id', $tenant->id)
+                        ->select([
+                            'item_images.id',
+                            'item_images.item_id',
+                            'item_images.storage_path',
+                            'item_images.is_primary',
+                        ]);
+                },
+            ])
+            ->first();
+
+        if ($item === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Item not found.',
+                'data' => [],
+                'meta' => (object) [],
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Item fetched successfully.',
+            'data' => [
+                'id' => $item->id,
+                'tenant_id' => $item->tenant_id,
+                'category' => $item->category !== null ? [
+                    'id' => $item->category->id,
+                    'name' => $item->category->name,
+                ] : null,
+                'name' => $item->name,
+                'slug' => $item->slug,
+                'description' => $item->long_description,
+                'price' => $item->activePrice !== null ? [
+                    'amount' => $item->activePrice->base_price_amount,
+                    'currency' => $item->activePrice->currency_code,
+                ] : null,
+                'image' => $item->primaryImage?->storage_path,
+            ],
+            'meta' => (object) [],
+        ]);
+    }
+
     private function ensureCatalogAccess(Tenant $tenant): ?JsonResponse
     {
         if ($tenant->status !== 'active') {
@@ -251,7 +449,7 @@ class PublicCatalogController extends Controller
         return $hasActiveSubscription ? null : $this->subscriptionExpiredResponse();
     }
 
-    private function applyActivePriceConstraint(Builder $query, int $tenantId): void
+    private function applyActivePriceConstraint($query, int $tenantId): void
     {
         $query
             ->where('item_prices.tenant_id', $tenantId)

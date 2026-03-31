@@ -28,7 +28,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        if (! $user->isSuperAdmin() && ! $user->isSalesAgent()) {
+        if (! $user->isSuperAdmin() && ! $user->isSalesAgent() && ! $user->isStoreOwner()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid credentials.',

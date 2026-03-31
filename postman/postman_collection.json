@@ -2838,6 +2838,69 @@
               ]
             }
           ]
+        },
+        {
+          "name": "Profile",
+          "item": [
+            {
+              "name": "Update Owner Profile",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}"
+                  },
+                  {
+                    "key": "X-Tenant-ID",
+                    "value": "{{owner_tenant_id}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Updated Owner Name\",\n  \"tenant_whatsapp_number\": \"+970599123456\",\n  \"password\": \"NewOwnerPass123!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/owner/profile",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "owner",
+                    "profile"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Owner data exists', function () { pm.expect(json.data.owner).to.be.an('object'); });",
+                      "pm.test('Tenant data exists', function () { pm.expect(json.data.tenant).to.be.an('object'); });"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -3012,6 +3075,126 @@
                   "pm.test('Data exists', function () { pm.expect(json.data).to.not.equal(undefined); });"
                 ]
               }
+            }
+          ]
+        },
+        {
+          "name": "Guest Browsing by Tenant ID",
+          "item": [
+            {
+              "name": "Get Categories by Tenant ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/public/tenants/{{tenant_id}}/categories",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "public",
+                    "tenants",
+                    "{{tenant_id}}",
+                    "categories"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('categories payload exists', function () { pm.expect(json.data).to.exist; });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get Items by Tenant ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/public/tenants/{{tenant_id}}/items",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "public",
+                    "tenants",
+                    "{{tenant_id}}",
+                    "items"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('items payload exists', function () { pm.expect(json.data).to.exist; });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get Item by Tenant ID + Item ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/public/tenants/{{tenant_id}}/items/{{item_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "public",
+                    "tenants",
+                    "{{tenant_id}}",
+                    "items",
+                    "{{item_id}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('item payload exists', function () { pm.expect(json.data).to.exist; });"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         }
