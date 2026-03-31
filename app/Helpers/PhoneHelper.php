@@ -5,16 +5,20 @@ namespace App\Helpers;
 class PhoneHelper
 {
     /**
-     * Normalize a Palestinian phone number to international format (970XXXXXXXXX)
+     * Normalize a phone number to international format (COUNTRYCODEXXXXXXXXXXX)
      * 
      * Handles multiple input formats:
-     * - +970123456789
-     * - 0123456789 (local format)
-     * - 123456789 (without country code or 0)
-     * - 970123456789 (country code already included)
+     * - +1234567890 (with or without +)
+     * - +1 123 456 7890 (with spaces and +)
+     * - 0123456789 (Palestinian local format - converts to 970XXXXXXXXX)
+     * - 123456789 (without country code - assumes Palestinian if 9 digits)
+     * - 1234567890 (country code already included)
+     * 
+     * Special handling for Palestine (970) and Israel (972):
+     * - Removes extra 0 after country code (e.g., 9700... → 970..., 9720... → 972...)
      * 
      * @param string|null $number The phone number to normalize
-     * @return string|null Normalized number in format 970XXXXXXXXX or null if invalid
+     * @return string|null Normalized number in international format or null if invalid
      */
     public static function normalize(?string $number): ?string
     {
@@ -30,14 +34,26 @@ class PhoneHelper
             return null;
         }
 
-        // If starts with 0, replace with 970 (Palestinian country code)
-        if (str_starts_with($number, '0')) {
+        // If starts with 0 and has 10 digits (Palestinian local format)
+        if (str_starts_with($number, '0') && strlen($number) === 10) {
             $number = '970' . substr($number, 1);
         }
 
-        // If doesn't start with 970, add it
-        if (!str_starts_with($number, '970')) {
+        // If 9 digits without country code, assume Palestinian and add 970
+        if (strlen($number) === 9) {
             $number = '970' . $number;
+        }
+
+        // Remove extra 0 after Palestinian (970) country code
+        // e.g., 9700123456789 → 970123456789
+        if (str_starts_with($number, '9700')) {
+            $number = '970' . substr($number, 4);
+        }
+
+        // Remove extra 0 after Israeli (972) country code
+        // e.g., 9720123456789 → 972123456789
+        if (str_starts_with($number, '9720')) {
+            $number = '972' . substr($number, 4);
         }
 
         return $number;
@@ -45,7 +61,9 @@ class PhoneHelper
 
     /**
      * Validate if a normalized phone number is valid
-     * Palestinian numbers should be 12 digits starting with 970
+     * 
+     * Palestinian (970) and Israeli (972): exactly 12 digits (country code + 9 digits)
+     * Other countries: 11-15 digits
      * 
      * @param string|null $number The normalized phone number
      * @return bool True if valid
@@ -56,7 +74,13 @@ class PhoneHelper
             return false;
         }
 
-        return (bool) preg_match('/^970\d{9}$/', $number);
+        // Palestinian (970) or Israeli (972): must be 12 digits (970/972 + 9 digits)
+        if (preg_match('/^(970|972)\d{9}$/', $number)) {
+            return true;
+        }
+
+        // Other international formats: 11-15 digits
+        return (bool) preg_match('/^\d{11,15}$/', $number);
     }
 
     /**
