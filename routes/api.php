@@ -22,6 +22,7 @@ use App\Http\Controllers\Public\CartController;
 use App\Http\Controllers\Public\CatalogController as LegacyPublicCatalogController;
 use App\Http\Controllers\Public\PublicCatalogController;
 use App\Http\Controllers\Public\StoreDiscoveryController;
+use App\Http\Controllers\SalesAgent\ProfileController as SalesAgentProfileController;
 use App\Http\Controllers\EndUser\CartPersistenceController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EndUser\EndUserAuthController;
@@ -195,4 +196,23 @@ Route::prefix('v1/enduser')->group(function (): void {
         });
     });
 });
+
+Route::prefix('v1/sales-agent')
+    ->middleware('auth:sanctum')
+    ->group(function (): void {
+        Route::put('profile', [SalesAgentProfileController::class, 'updateProfile']);
+
+        Route::get('owners', [SalesAgentProfileController::class, 'owners']);
+        Route::get('owners/{id}', [SalesAgentProfileController::class, 'showOwner']);
+
+        Route::get('stores', [SalesAgentProfileController::class, 'stores']);
+        Route::get('stores/{id}', [SalesAgentProfileController::class, 'showStore']);
+
+        Route::prefix('subscriptions')->group(function (): void {
+            Route::get('active', [SalesAgentProfileController::class, 'activeSubscriptions']);
+            Route::get('expiring', [SalesAgentProfileController::class, 'expiringSubscriptions']);
+            Route::get('expired', [SalesAgentProfileController::class, 'expiredSubscriptions']);
+            Route::post('renew', [SalesAgentProfileController::class, 'renewSubscription']);
+        });
+    });
 

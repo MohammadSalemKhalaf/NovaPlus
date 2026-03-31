@@ -28,6 +28,15 @@ class AuthController extends Controller
             ], 401);
         }
 
+        if (! $user->isSuperAdmin() && ! $user->isSalesAgent()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid credentials.',
+                'data' => (object) [],
+                'meta' => (object) [],
+            ], 401);
+        }
+
         if ($user->status !== 'active') {
             return response()->json([
                 'success' => false,
