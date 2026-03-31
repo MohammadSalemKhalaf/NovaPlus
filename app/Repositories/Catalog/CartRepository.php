@@ -136,7 +136,23 @@ class CartRepository
                     continue;
                 }
 
-                $targetCart = $this->firstOrCreateActiveByUserAndTenant((int) $user->id, (int) $deviceCart->tenant_id, $deviceId);
+                $targetCart = $this->findActiveByUserAndTenant((int) $user->id, (int) $deviceCart->tenant_id);
+
+                // No user cart for this tenant yet: promote guest cart to user cart directly.
+                if ($targetCart === null) {
+                    $deviceCart->update(['user_id' => (int) $user->id]);
+
+                    CartItem::query()
+                        ->where('cart_id', $deviceCart->id)
+                        ->update(['user_id' => (int) $user->id]);
+
+                    continue;
+                }
+
+                // Same physical cart already belongs to this user/tenant, no merge needed.
+                if ((int) $targetCart->id === (int) $deviceCart->id) {
+                    continue;
+                }
 
                 foreach ($deviceCart->items as $item) {
                     $existing = CartItem::query()
@@ -161,10 +177,8 @@ class CartRepository
                     }
                 }
 
-                if ((int) $deviceCart->id !== (int) $targetCart->id) {
-                    CartItem::query()->where('cart_id', $deviceCart->id)->delete();
-                    $deviceCart->delete();
-                }
+                CartItem::query()->where('cart_id', $deviceCart->id)->delete();
+                $deviceCart->delete();
             }
         });
     }

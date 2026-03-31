@@ -548,7 +548,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"email\": \"{{end_user_email}}\",\n  \"password\": \"{{end_user_password}}\"\n}"
+                  "raw": "{\n  \"email\": \"{{end_user_email}}\",\n  \"password\": \"{{end_user_password}}\",\n  \"device_id\": \"{{device_id}}\"\n}"
                 }
               },
               "response": [],
@@ -4300,6 +4300,99 @@
                     "type": "text/javascript",
                     "exec": [
                       "pm.test('Status is 200', function () { pm.response.to.have.status(200); });"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Guest Cart",
+          "item": [
+            {
+              "name": "Guest Cart Preview",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{end_user_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/enduser/guest-cart/preview",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "guest-cart",
+                    "preview"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"device_id\": \"{{device_id}}\"\n}"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Guest Cart Merge",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{end_user_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/enduser/guest-cart/merge",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "guest-cart",
+                    "merge"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"device_id\": \"{{device_id}}\"\n}"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "var json = pm.response.json();",
+                      "pm.test('Cart payload exists', function () { pm.expect(json.data.cart).to.be.an('object'); });"
                     ]
                   }
                 }

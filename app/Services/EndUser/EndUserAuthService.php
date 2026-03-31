@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Hash;
 class EndUserAuthService
 {
     public function __construct(
-        private EndUserRepository $userRepository
+        private EndUserRepository $userRepository,
+        private EndUserCartService $endUserCartService,
     ) {}
 
     /**
@@ -38,7 +39,7 @@ class EndUserAuthService
     /**
      * Login user with email and password.
      */
-    public function login(string $email, string $password): array
+    public function login(string $email, string $password, ?string $deviceId = null): array
     {
         $user = $this->userRepository->findByEmail($email);
 
@@ -56,9 +57,23 @@ class EndUserAuthService
         // Generate API token
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        $cartMerge = null;
+
+        if ($deviceId !== null && trim($deviceId) !== '') {
+            $preview = $this->endUserCartService->previewMerge($user, $deviceId);
+            $mergedCart = $this->endUserCartService->mergeDeviceCart($user, $deviceId);
+
+            $cartMerge = [
+                'device_id' => $deviceId,
+                'preview' => $preview,
+                'cart' => $mergedCart,
+            ];
+        }
+
         return [
             'user' => new EndUserDto($user),
             'token' => $token,
+            'cart_merge' => $cartMerge,
         ];
     }
 

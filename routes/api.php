@@ -29,6 +29,7 @@ use App\Http\Controllers\EndUser\CartPersistenceController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EndUser\EndUserAuthController;
 use App\Http\Controllers\EndUser\FavoritesController;
+use App\Http\Controllers\EndUser\GuestCart\GuestCartController;
 use App\Http\Controllers\EndUser\PreferencesController;
 use App\Http\Controllers\EndUser\RecentlyViewedController;
 
@@ -213,6 +214,11 @@ Route::prefix('v1/enduser')->group(function (): void {
             Route::get('/', [CartPersistenceController::class, 'show']);
             Route::post('merge-preview', [CartPersistenceController::class, 'previewMerge']);
             Route::post('merge-device', [CartPersistenceController::class, 'merge']);
+        });
+
+        Route::prefix('guest-cart')->group(function (): void {
+            Route::post('preview', [GuestCartController::class, 'preview']);
+            Route::post('merge', [GuestCartController::class, 'merge']);
         });
     });
 });

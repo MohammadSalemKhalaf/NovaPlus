@@ -51,7 +51,8 @@ class EndUserAuthController extends Controller
         try {
             $result = $this->authService->login(
                 $request->validated('email'),
-                $request->validated('password')
+                $request->validated('password'),
+                $request->validated('device_id')
             );
 
             return response()->json([
@@ -60,6 +61,7 @@ class EndUserAuthController extends Controller
                 'data' => [
                     'user' => $result['user']->toArray(),
                     'token' => $result['token'],
+                    'cart_merge' => $result['cart_merge'] ?? null,
                 ],
             ], 200);
         } catch (\InvalidArgumentException $e) {
@@ -68,6 +70,15 @@ class EndUserAuthController extends Controller
                 'message' => $e->getMessage(),
                 'data' => null,
             ], 401);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Login failed due to a server error.',
+                'data' => null,
+                'meta' => [
+                    'error' => $e->getMessage(),
+                ],
+            ], 500);
         }
     }
 
