@@ -14,7 +14,7 @@ class TenantControlRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'action' => ['required', 'in:activate,suspend,delete,deactivate_owner,activate_owner'],
+            'action' => ['required', 'in:activate,suspend,delete,delete_with_owner,deactivate_owner,activate_owner'],
         ];
     }
 
@@ -22,7 +22,7 @@ class TenantControlRequest extends FormRequest
     {
         return [
             'action.required' => 'Action is required.',
-            'action.in' => 'Action must be one of: activate, suspend, delete, deactivate_owner, activate_owner.',
+            'action.in' => 'Action must be one of: activate, suspend, delete, delete_with_owner, deactivate_owner, activate_owner.',
         ];
     }
 }

@@ -10,6 +10,27 @@ class TenantControlService
     public function __construct(private readonly TenantControlRepository $repository) {}
 
     /**
+     * List tenants with filters and pagination.
+     */
+    public function list(array $filters = []): array
+    {
+        $paginated = $this->repository->paginate($filters);
+
+        return [
+            'tenants' => array_map(
+                static fn ($tenant): array => (new TenantControlDto($tenant))->toArray(),
+                $paginated->items(),
+            ),
+            'pagination' => [
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'per_page' => $paginated->perPage(),
+                'total' => $paginated->total(),
+            ],
+        ];
+    }
+
+    /**
      * Get tenant details.
      */
     public function show(int $id): ?array
@@ -67,6 +88,22 @@ class TenantControlService
         }
 
         $this->repository->delete($tenant);
+
+        return true;
+    }
+
+    /**
+     * Delete tenant and its owner account in one operation.
+     */
+    public function deleteWithOwner(int $id): bool
+    {
+        $tenant = $this->repository->findById($id);
+
+        if (! $tenant) {
+            return false;
+        }
+
+        $this->repository->deleteWithOwner($tenant);
 
         return true;
     }

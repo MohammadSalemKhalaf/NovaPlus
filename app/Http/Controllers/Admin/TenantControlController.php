@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\TenantListRequest;
 use App\Http\Requests\Admin\TenantControlRequest;
 use App\Services\Admin\TenantControlService;
 use Illuminate\Http\JsonResponse;
@@ -11,6 +12,27 @@ use Illuminate\Http\Request;
 class TenantControlController extends Controller
 {
     public function __construct(private readonly TenantControlService $service) {}
+
+    /**
+     * List tenants with filters for super admin stores management.
+     */
+    public function index(TenantListRequest $request): JsonResponse
+    {
+        $actor = $this->requireSuperAdmin($request);
+
+        if ($actor instanceof JsonResponse) {
+            return $actor;
+        }
+
+        $data = $this->service->list($request->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tenants fetched successfully.',
+            'data' => $data,
+            'meta' => (object) [],
+        ]);
+    }
 
     /**
      * Get tenant details and status.
@@ -62,6 +84,7 @@ class TenantControlController extends Controller
             'activate' => $this->service->activate($id),
             'suspend' => $this->service->suspend($id),
             'delete' => $this->handleDelete($id),
+            'delete_with_owner' => $this->handleDeleteWithOwner($id),
             'deactivate_owner' => $this->service->deactivateOwner($id),
             'activate_owner' => $this->service->activateOwner($id),
             default => null,
@@ -76,10 +99,12 @@ class TenantControlController extends Controller
             ], 404);
         }
 
-        if ($action === 'delete') {
+        if ($action === 'delete' || $action === 'delete_with_owner') {
             return response()->json([
                 'success' => true,
-                'message' => 'Tenant deleted successfully.',
+                'message' => $action === 'delete_with_owner'
+                    ? 'Tenant and owner deleted successfully.'
+                    : 'Tenant deleted successfully.',
                 'data' => (object) [],
                 'meta' => (object) [],
             ]);
@@ -101,6 +126,14 @@ class TenantControlController extends Controller
     private function handleDelete(int $id): bool
     {
         return $this->service->delete($id);
+    }
+
+    /**
+     * Helper for destructive delete action with owner.
+     */
+    private function handleDeleteWithOwner(int $id): bool
+    {
+        return $this->service->deleteWithOwner($id);
     }
 
     /**

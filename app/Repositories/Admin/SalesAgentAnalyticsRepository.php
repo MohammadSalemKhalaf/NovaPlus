@@ -61,6 +61,86 @@ class SalesAgentAnalyticsRepository
     }
 
     /**
+     * Report owners and stores created by each sales agent.
+     *
+     * @return array{sales_agents: array<int, array<string, mixed>>, pagination: array<string, int>}
+     */
+    public function getCreatedOwnersAndStores(?int $salesAgentId = null, int $perPage = 15): array
+    {
+        $query = User::query()
+            ->whereHas('roles', fn ($q) => $q->where('slug', 'sales_agent'))
+            ->with([
+                'createdUsers' => function ($createdUsersQuery): void {
+                    $createdUsersQuery
+                        ->select(['id', 'name', 'email', 'status', 'created_by', 'created_at'])
+                        ->whereHas('tenantUsers', fn ($tenantUserQuery) => $tenantUserQuery->where('role', 'owner'))
+                        ->with([
+                            'ownedTenants' => function ($tenantsQuery): void {
+                                $tenantsQuery->select([
+                                    'id',
+                                    'owner_user_id',
+                                    'name',
+                                    'slug',
+                                    'status',
+                                    'business_type_id',
+                                    'created_at',
+                                ]);
+                            },
+                        ]);
+                },
+            ])
+            ->select(['id', 'name', 'email', 'status', 'created_at'])
+            ->orderByDesc('id');
+
+        if ($salesAgentId !== null && $salesAgentId > 0) {
+            $query->where('id', $salesAgentId);
+        }
+
+        $paginated = $query->paginate($perPage);
+
+        $rows = $paginated->getCollection()->map(function (User $agent): array {
+            $owners = $agent->createdUsers->map(function (User $owner): array {
+                return [
+                    'id' => (int) $owner->id,
+                    'name' => (string) $owner->name,
+                    'email' => (string) $owner->email,
+                    'status' => (string) $owner->status,
+                    'created_at' => $owner->created_at?->toIso8601String(),
+                    'stores' => $owner->ownedTenants->map(fn ($tenant): array => [
+                        'id' => (int) $tenant->id,
+                        'name' => (string) $tenant->name,
+                        'slug' => (string) $tenant->slug,
+                        'status' => (string) $tenant->status,
+                        'business_type_id' => (int) $tenant->business_type_id,
+                        'created_at' => $tenant->created_at?->toIso8601String(),
+                    ])->values()->all(),
+                ];
+            })->values();
+
+            return [
+                'id' => (int) $agent->id,
+                'name' => (string) $agent->name,
+                'email' => (string) $agent->email,
+                'status' => (string) $agent->status,
+                'created_at' => $agent->created_at?->toIso8601String(),
+                'owners_count' => $owners->count(),
+                'stores_count' => (int) $owners->sum(fn (array $owner): int => count($owner['stores'])),
+                'owners' => $owners->all(),
+            ];
+        })->values()->all();
+
+        return [
+            'sales_agents' => $rows,
+            'pagination' => [
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'per_page' => $paginated->perPage(),
+                'total' => $paginated->total(),
+            ],
+        ];
+    }
+
+    /**
      * Get tenants count for a sales agent.
      */
     private function getTenantsCountForAgent(int $agentId): int

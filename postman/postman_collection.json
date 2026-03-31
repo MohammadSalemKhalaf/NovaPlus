@@ -10,107 +10,6 @@
       "name": "Auth",
       "item": [
         {
-          "name": "Admin Login",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@novaplus.test\",\n  \"password\": \"password123\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/auth/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "auth",
-                "login"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.environment.set('token', String(json.data.token));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Owner Login",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{owner_email}}\",\n  \"password\": \"{{owner_password}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/auth/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "auth",
-                "login"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.environment.set('owner_token', String(json.data.token));",
-                  "if (json.data.tenants && json.data.tenants.length > 0) { pm.environment.set('owner_tenant_id', String(json.data.tenants[0].id)); }"
-                ]
-              }
-            }
-          ]
-        },
-        {
           "name": "Super Admin Auth",
           "item": [
             {
@@ -529,263 +428,1069 @@
       "name": "Super Admin",
       "item": [
         {
-          "name": "Get Business Types",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/public/business-types",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "public",
-                "business-types"
-              ]
-            }
-          },
-          "event": [
+          "name": "Sales Agents Management",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data exists', function () { pm.expect(json.data).to.not.equal(undefined); });"
-                ]
-              }
+              "name": "Create Sales Agent",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Sales Agent {{$timestamp}}\",\n  \"email\": \"agent{{$timestamp}}@novaplus.test\",\n  \"password\": \"password123\",\n  \"role\": \"sales_agent\",\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/sales-agents",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "sales-agents"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Requested role is sales_agent', function () { pm.expect(json.data.requested_role).to.eql('sales_agent'); });",
+                      "pm.test('sales_agent role assignment confirmed', function () { pm.expect(json.data.role_assignment.sales_agent_assigned).to.eql(true); });",
+                      "pm.test('Roles include sales_agent', function () { pm.expect(json.data.sales_agent.roles).to.include('sales_agent'); });",
+                      "pm.environment.set('sales_agent_id', String(json.data.sales_agent.id));",
+                      "pm.environment.set('sales_agent_email', String(json.data.sales_agent.email));",
+                      "pm.environment.set('sales_agent_password', 'password123');"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "List Sales Agents",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/sales-agents?per_page=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "sales-agents"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Show Sales Agent",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/sales-agents/{{sales_agent_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "sales-agents",
+                    "{{sales_agent_id}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Update Sales Agent",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/sales-agents/{{sales_agent_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "sales-agents",
+                    "{{sales_agent_id}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Updated Agent {{$timestamp}}\",\n  \"email\": \"updated-agent{{$timestamp}}@novaplus.test\",\n  \"password\": \"NewPass123!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Deactivate Sales Agent",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/sales-agents/{{sales_agent_id}}/status",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "sales-agents",
+                    "{{sales_agent_id}}",
+                    "status"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"inactive\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Delete Sales Agent",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/sales-agents/{{sales_agent_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "sales-agents",
+                    "{{sales_agent_id}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         },
         {
-          "name": "Onboarding Owner",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"owner_name\": \"Owner {{$timestamp}}\",\n  \"owner_email\": \"owner{{$timestamp}}@novaplus.test\",\n  \"password\": \"OwnerPass123!\",\n  \"tenant_name\": \"Store {{$timestamp}}\",\n  \"tenant_slug\": \"store-{{$timestamp}}\",\n  \"business_mode\": \"product\",\n  \"activation_channel\": \"email\",\n  \"business_type_id\": \"{{business_type_id}}\",\n  \"tenant_whatsapp_number\": \"+970599000111\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/onboarding/owner",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "onboarding",
-                "owner"
-              ]
-            }
-          },
-          "event": [
+          "name": "Owner Onboarding",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.environment.set('owner_user_id', String(json.data.owner_user_id));",
-                  "pm.environment.set('tenant_id', String(json.data.tenant_id));",
-                  "pm.environment.set('owner_tenant_id', String(json.data.tenant_id));",
-                  "pm.environment.set('owner_email', String(json.data.email));",
-                  "pm.environment.set('owner_password', 'OwnerPass123!');"
-                ]
-              }
+              "name": "Get Business Types",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/public/business-types",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "public",
+                    "business-types"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Data exists', function () { pm.expect(json.data).to.not.equal(undefined); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Onboarding Owner",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"owner_name\": \"Owner {{$timestamp}}\",\n  \"owner_email\": \"owner{{$timestamp}}@novaplus.test\",\n  \"password\": \"OwnerPass123!\",\n  \"tenant_name\": \"Store {{$timestamp}}\",\n  \"tenant_slug\": \"store-{{$timestamp}}\",\n  \"business_mode\": \"product\",\n  \"activation_channel\": \"email\",\n  \"business_type_id\": \"{{business_type_id}}\",\n  \"tenant_whatsapp_number\": \"+970599000111\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/onboarding/owner",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "onboarding",
+                    "owner"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.environment.set('owner_user_id', String(json.data.owner_user_id));",
+                      "pm.environment.set('tenant_id', String(json.data.tenant_id));",
+                      "pm.environment.set('owner_tenant_id', String(json.data.tenant_id));",
+                      "pm.environment.set('owner_email', String(json.data.email));",
+                      "pm.environment.set('owner_password', 'OwnerPass123!');"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create Activation Code",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"duration_months\": 12,\n  \"code\": \"SUB-{{$timestamp}}\",\n  \"note\": \"Admin created code\",\n  \"sold_by_user_id\": null\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/subscriptions/codes",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "subscriptions",
+                    "codes"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.environment.set('subscription_code', String(json.data.code));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Redeem Tenant + Owner",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"{{subscription_code}}\",\n  \"tenant_id\": {{tenant_id}}\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/subscriptions/redeem",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "subscriptions",
+                    "redeem"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Subscription active', function () { pm.expect(json.data.status).to.eql('active'); });",
+                      "pm.environment.set('subscription_id', String(json.data.subscription_id));"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         },
         {
-          "name": "Create Activation Code",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"duration_months\": 12,\n  \"code\": \"SUB-{{$timestamp}}\",\n  \"note\": \"Admin created code\",\n  \"sold_by_user_id\": null\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/subscriptions/codes",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "subscriptions",
-                "codes"
-              ]
-            }
-          },
-          "event": [
+          "name": "Reports and Filters",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.environment.set('subscription_code', String(json.data.code));"
-                ]
-              }
+              "name": "Created Owners/Stores by Agent",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/sales-agents/reports/created-owners?sales_agent_id={{sales_agent_id}}&per_page=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "sales-agents",
+                    "reports",
+                    "created-owners"
+                  ],
+                  "query": [
+                    {
+                      "key": "sales_agent_id",
+                      "value": "{{sales_agent_id}}"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Revenue By Agent",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/revenue/by-agent?sales_agent_id={{sales_agent_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "revenue",
+                    "by-agent"
+                  ],
+                  "query": [
+                    {
+                      "key": "sales_agent_id",
+                      "value": "{{sales_agent_id}}"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Subscriptions Active",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/subscriptions-management/active?created_by_agent_id={{sales_agent_id}}&per_page=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "subscriptions-management",
+                    "active"
+                  ],
+                  "query": [
+                    {
+                      "key": "created_by_agent_id",
+                      "value": "{{sales_agent_id}}"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Subscriptions Expired",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/subscriptions-management/expired?created_by_agent_id={{sales_agent_id}}&per_page=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "subscriptions-management",
+                    "expired"
+                  ],
+                  "query": [
+                    {
+                      "key": "created_by_agent_id",
+                      "value": "{{sales_agent_id}}"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Subscriptions Expiring Soon",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/subscriptions-management/expiring-soon?days=7&per_page=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "subscriptions-management",
+                    "expiring-soon"
+                  ],
+                  "query": [
+                    {
+                      "key": "days",
+                      "value": "7"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         },
         {
-          "name": "Redeem Tenant + Owner",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"code\": \"{{subscription_code}}\",\n  \"tenant_id\": {{tenant_id}}\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/admin/subscriptions/redeem",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "subscriptions",
-                "redeem"
-              ]
-            }
-          },
-          "event": [
+          "name": "Stores Management",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Subscription active', function () { pm.expect(json.data.status).to.eql('active'); });",
-                  "pm.environment.set('subscription_id', String(json.data.subscription_id));"
-                ]
-              }
+              "name": "List Stores",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/tenants?per_page=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "tenants"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Filter Stores by Business Type",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/tenants?business_type_id={{business_type_id}}&per_page=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "tenants"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_type_id",
+                      "value": "{{business_type_id}}"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Store Controls (Show)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/tenants/{{tenant_id}}/controls",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "tenants",
+                    "{{tenant_id}}",
+                    "controls"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         },
         {
-          "name": "Create Sales Agent",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Sales Agent {{$timestamp}}\",\n  \"email\": \"agent{{$timestamp}}@novaplus.test\",\n  \"password\": \"password123\",\n  \"role\": \"sales_agent\",\n  \"status\": \"active\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+          "name": "Store Subscription Actions",
+          "item": [
+            {
+              "name": "Suspend Subscription",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/subscriptions-management/{{subscription_id}}/action",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "subscriptions-management",
+                    "{{subscription_id}}",
+                    "action"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"suspend\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 }
-              }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
             },
-            "url": {
-              "raw": "{{base_url}}/admin/sales-agents",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "sales-agents"
+            {
+              "name": "Renew Subscription",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/subscriptions-management/{{subscription_id}}/action",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "subscriptions-management",
+                    "{{subscription_id}}",
+                    "action"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"renew\",\n  \"months\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
               ]
             }
-          },
-          "event": [
+          ]
+        },
+        {
+          "name": "Destructive Admin Action",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Requested role is sales_agent', function () { pm.expect(json.data.requested_role).to.eql('sales_agent'); });",
-                  "pm.test('sales_agent role assignment confirmed', function () { pm.expect(json.data.role_assignment.sales_agent_assigned).to.eql(true); });",
-                  "pm.test('Roles include sales_agent', function () { pm.expect(json.data.sales_agent.roles).to.include('sales_agent'); });",
-                  "pm.environment.set('sales_agent_id', String(json.data.sales_agent.id));",
-                  "pm.environment.set('sales_agent_email', String(json.data.sales_agent.email));",
-                  "pm.environment.set('sales_agent_password', 'password123');"
-                ]
-              }
+              "name": "Delete Store + Owner (Cascade)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/tenants/{{tenant_id}}/controls",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "tenants",
+                    "{{tenant_id}}",
+                    "controls"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"delete_with_owner\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         }

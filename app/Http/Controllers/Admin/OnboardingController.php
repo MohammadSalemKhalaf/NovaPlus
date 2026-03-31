@@ -30,6 +30,7 @@ class OnboardingController extends Controller
                         ? Hash::make($validated['password'])
                         : Hash::make(bin2hex(random_bytes(16))),
                     'status' => $validated['activation_channel'] === 'email' ? 'pending' : 'active',
+                    'created_by' => $request->user()->id,
                     'email_verified_at' => $validated['activation_channel'] === 'internal' ? now() : null,
                 ]);
 

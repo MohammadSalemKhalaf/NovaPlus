@@ -43,6 +43,7 @@ Route::prefix('v1/admin')->group(function (): void {
         Route::middleware('platform.admin')->group(function (): void {
             Route::post('users', [UserController::class, 'store']);
             Route::post('tenants', [TenantController::class, 'store']);
+            Route::get('tenants', [TenantControlController::class, 'index']);
 
             Route::prefix('sales-agents')->group(function (): void {
                 Route::post('/', [SalesAgentController::class, 'store']);
@@ -84,6 +85,7 @@ Route::prefix('v1/admin')->group(function (): void {
             });
 
             Route::prefix('sales-agents')->group(function (): void {
+                Route::get('reports/created-owners', [SalesAgentPerformanceController::class, 'createdOwnersReport']);
                 Route::get('{id}/performance', [SalesAgentPerformanceController::class, 'show']);
                 Route::get('performance/top-performers', [SalesAgentPerformanceController::class, 'topPerformers']);
             });

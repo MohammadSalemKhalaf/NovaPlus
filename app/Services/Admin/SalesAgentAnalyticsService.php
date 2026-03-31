@@ -10,6 +10,16 @@ class SalesAgentAnalyticsService
     public function __construct(private readonly SalesAgentAnalyticsRepository $repository) {}
 
     /**
+     * Get owners and stores created by sales agents.
+     *
+     * @return array{sales_agents: array<int, array<string, mixed>>, pagination: array<string, int>}
+     */
+    public function getCreatedOwnersAndStores(?int $salesAgentId = null, int $perPage = 15): array
+    {
+        return $this->repository->getCreatedOwnersAndStores($salesAgentId, $perPage);
+    }
+
+    /**
      * Get performance metrics for a single agent.
      */
     public function getAgentMetrics(int $agentId): ?array

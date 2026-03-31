@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SalesAgentCreatedOwnersReportRequest;
 use App\Services\Admin\SalesAgentAnalyticsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -10,6 +11,31 @@ use Illuminate\Http\Request;
 class SalesAgentPerformanceController extends Controller
 {
     public function __construct(private readonly SalesAgentAnalyticsService $service) {}
+
+    /**
+     * Get owners and stores created by sales agents.
+     */
+    public function createdOwnersReport(SalesAgentCreatedOwnersReportRequest $request): JsonResponse
+    {
+        $actor = $this->requireSuperAdmin($request);
+
+        if ($actor instanceof JsonResponse) {
+            return $actor;
+        }
+
+        $validated = $request->validated();
+        $perPage = isset($validated['per_page']) ? (int) $validated['per_page'] : 15;
+        $salesAgentId = isset($validated['sales_agent_id']) ? (int) $validated['sales_agent_id'] : null;
+
+        $data = $this->service->getCreatedOwnersAndStores($salesAgentId, $perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sales agents owners/stores report fetched successfully.',
+            'data' => $data,
+            'meta' => (object) [],
+        ]);
+    }
 
     /**
      * Get performance metrics for a specific agent.
