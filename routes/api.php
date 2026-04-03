@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ItemController;
 use App\Http\Controllers\Admin\ItemImageController;
 use App\Http\Controllers\Admin\ItemPriceController;
 use App\Http\Controllers\Admin\OnboardingController;
+use App\Http\Controllers\Admin\NotificationBroadcastController;
 use App\Http\Controllers\Admin\RevenueController;
 use App\Http\Controllers\Admin\SalesAgentController;
 use App\Http\Controllers\Admin\SalesAgentPerformanceController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\Owner\CategoryController as OwnerCategoryController;
 use App\Http\Controllers\Owner\ItemController as OwnerItemController;
 use App\Http\Controllers\Owner\OfferController as OwnerOfferController;
 use App\Http\Controllers\Owner\ProfileController as OwnerProfileController;
+use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
 use App\Http\Controllers\Public\BusinessTypeController;
 use App\Http\Controllers\Public\CartController;
 use App\Http\Controllers\Public\CatalogController as LegacyPublicCatalogController;
@@ -69,6 +71,10 @@ Route::prefix('v1/admin')->group(function (): void {
 
             Route::prefix('onboarding')->group(function (): void {
                 Route::post('owner', [OnboardingController::class, 'storeOwner']);
+            });
+
+            Route::prefix('notifications')->group(function (): void {
+                Route::post('broadcast', [NotificationBroadcastController::class, 'broadcast']);
             });
 
             Route::prefix('subscriptions')->group(function (): void {
@@ -156,6 +162,7 @@ Route::prefix('v1/owner/catalog')
 Route::prefix('v1/owner')
     ->middleware(['auth:sanctum', 'tenant.resolve', 'tenant.access', 'tenant.owner'])
     ->group(function (): void {
+        Route::get('dashboard', [OwnerDashboardController::class, 'index']);
         Route::put('profile', [OwnerProfileController::class, 'updateProfile']);
 
         Route::prefix('offers')->group(function (): void {
@@ -233,9 +240,10 @@ Route::prefix('v1/enduser')->group(function (): void {
         });
 
         Route::prefix('notifications')->group(function (): void {
-            Route::get('/', [NotificationsController::class, 'index']);
-            Route::post('{id}/read', [NotificationsController::class, 'markAsRead'])->whereNumber('id');
+            Route::get('unread-count', [NotificationsController::class, 'unreadCount']);
             Route::post('read-all', [NotificationsController::class, 'markAllAsRead']);
+            Route::post('{id}/read', [NotificationsController::class, 'markAsRead'])->whereNumber('id');
+            Route::get('/', [NotificationsController::class, 'index']);
         });
     });
 });

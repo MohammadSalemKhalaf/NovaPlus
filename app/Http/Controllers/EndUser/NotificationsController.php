@@ -77,4 +77,19 @@ class NotificationsController extends Controller
             'meta' => (object) [],
         ]);
     }
+
+    public function unreadCount(Request $request): JsonResponse
+    {
+        $user = $request->user('sanctum');
+        $count = $this->notificationInboxService->getUnreadCount($user);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Unread count retrieved successfully',
+            'data' => [
+                'count' => $count,
+            ],
+            'meta' => (object) [],
+        ]);
+    }
 }

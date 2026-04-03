@@ -132,4 +132,50 @@ class NotificationRepository
                 'updated_at' => now(),
             ]);
     }
+
+    public function getUnreadCount(int $userId): int
+    {
+        return NotificationRecipient::query()
+            ->where('user_id', $userId)
+            ->where('is_read', false)
+            ->count();
+    }
+
+    public function getForUser(int $userId, int $notificationId): ?NotificationRecipient
+    {
+        return NotificationRecipient::query()
+            ->where('user_id', $userId)
+            ->where('notification_id', $notificationId)
+            ->select([
+                'id',
+                'notification_id',
+                'user_id',
+                'is_read',
+                'read_at',
+                'delivery_status',
+                'created_at',
+                'updated_at',
+            ])
+            ->with([
+                'notification' => static function ($query): void {
+                    $query->select([
+                        'id',
+                        'type',
+                        'title',
+                        'body',
+                        'notifiable_type',
+                        'notifiable_id',
+                        'related_type',
+                        'related_id',
+                        'channel',
+                        'priority',
+                        'status',
+                        'created_by',
+                        'created_at',
+                        'updated_at',
+                    ]);
+                },
+            ])
+            ->first();
+    }
 }

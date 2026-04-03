@@ -2,20 +2,23 @@
 
 namespace App\Services\Public;
 
+use App\Helpers\PhoneHelper;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Item;
-use App\Models\ItemPrice;
 use App\Models\Tenant;
 use App\Repositories\Catalog\CartRepository;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 class CartService
 {
+    private const DEFAULT_CURRENCY_SYMBOL = '$';
+
     public function __construct(
         private readonly PublicTenantAccessService $tenantAccessService,
         private readonly CartRepository $cartRepository,
@@ -33,6 +36,50 @@ class CartService
      */
     public function addItem(string $deviceId, int $itemId, int $quantity): array
     {
+        $with = [
+            'tenant' => function ($query): void {
+                $query->select([
+                    'tenants.id',
+                    'tenants.name',
+                    'tenants.slug',
+                    'tenants.status',
+                    'tenants.whatsapp_number',
+                ]);
+            },
+            'activePrice' => function ($query): void {
+                $query
+                    ->where('item_prices.pricing_status', 'active')
+                    ->where('item_prices.effective_from', '<=', now())
+                    ->where(function (Builder $nested): void {
+                        $nested
+                            ->whereNull('item_prices.effective_to')
+                            ->orWhere('item_prices.effective_to', '>=', now());
+                    })
+                    ->select([
+                        'item_prices.id',
+                        'item_prices.tenant_id',
+                        'item_prices.item_id',
+                        'item_prices.currency_code',
+                        'item_prices.base_price_amount',
+                    ]);
+            },
+        ];
+
+        if (Schema::hasTable('offers') && Schema::hasTable('offer_items')) {
+            $with['offers'] = function ($query): void {
+                $query->select([
+                    'offers.id',
+                    'offers.tenant_id',
+                    'offers.title',
+                    'offers.discount_type',
+                    'offers.discount_value',
+                    'offers.starts_at',
+                    'offers.ends_at',
+                    'offers.status',
+                ]);
+            };
+        }
+
         $item = Item::query()
             ->where('items.id', $itemId)
             ->where('items.status', 'active')
@@ -51,31 +98,8 @@ class CartService
                     })
                     ->orWhereDoesntHave('itemPrices');
             })
-            ->with([
-                'tenant' => function ($query): void {
-                    $query->select([
-                        'tenants.id',
-                        'tenants.name',
-                        'tenants.slug',
-                        'tenants.status',
-                        'tenants.whatsapp_number',
-                    ]);
-                },
-            ])
+            ->with($with)
             ->first();
-
-        $activePrice = $item !== null
-            ? ItemPrice::query()
-                ->where('item_prices.tenant_id', $item->tenant_id)
-                ->where('item_prices.item_id', $item->id)
-                ->where('item_prices.pricing_status', 'active')
-                ->where('item_prices.effective_from', '<=', now())
-                ->where(function (Builder $query): void {
-                    $query->whereNull('item_prices.effective_to')->orWhere('item_prices.effective_to', '>=', now());
-                })
-                ->orderByDesc('item_prices.id')
-                ->first()
-            : null;
 
         $hasAnyPrice = $item !== null ? $item->itemPrices()->exists() : false;
 
@@ -102,8 +126,9 @@ class CartService
             ], 404);
         }
 
-        return DB::transaction(function () use ($deviceId, $item, $quantity, $activePrice): array {
+        return DB::transaction(function () use ($deviceId, $item, $quantity): array {
             $cart = $this->getOrCreateCart($deviceId, (int) $item->tenant_id);
+            $unitPrice = number_format((float) ($item->final_price ?? 0.0), 2, '.', '');
 
             $cartItem = $this->cartRepository->findCartItemForUpdate((int) $cart->id, (int) $item->id);
 
@@ -113,11 +138,11 @@ class CartService
                     'device_id' => $deviceId,
                     'item_id' => $item->id,
                     'quantity' => $quantity,
-                    'unit_price_snapshot' => $activePrice?->base_price_amount ?? 0,
+                    'unit_price_snapshot' => $unitPrice,
                 ]);
             } else {
                 $cartItem->quantity = (int) $cartItem->quantity + $quantity;
-                $cartItem->unit_price_snapshot = $activePrice?->base_price_amount ?? 0;
+                $cartItem->setAttribute('unit_price_snapshot', $unitPrice);
                 $cartItem->save();
             }
 
@@ -253,23 +278,8 @@ class CartService
                 ], 422);
             }
 
-            $lines = [];
-
-            foreach ($tenantItems as $cartItem) {
-                $lines[] = sprintf(
-                    '* %s x%d',
-                    $cartItem->item?->name ?? 'Item #'.$cartItem->item_id,
-                    (int) $cartItem->quantity,
-                );
-            }
-
-            $message = implode("\n", [
-                'طلب جديد:',
-                '',
-                ...$lines,
-            ]);
-
-            $whatsappUrl = $tenant->getWhatsAppUrl($message);
+            $message = $this->buildCheckoutMessageForStore($tenant, $tenantItems);
+            $whatsappUrl = $this->buildEncodedWhatsAppUrl($tenant, $message);
 
             if (!$whatsappUrl) {
                 $this->fail([
@@ -296,6 +306,83 @@ class CartService
             'stores' => $storePayloads,
             'cart' => $primaryCart,
         ];
+    }
+
+    /**
+     * @param \Illuminate\Support\Collection<int, CartItem> $tenantItems
+     */
+    private function buildCheckoutMessageForStore(Tenant $tenant, \Illuminate\Support\Collection $tenantItems): string
+    {
+        $orderLines = [];
+        $total = 0.0;
+        $hasAnyOffer = false;
+
+        foreach ($tenantItems as $cartItem) {
+            $itemName = (string) ($cartItem->item?->name ?? 'Item #'.$cartItem->item_id);
+            $quantity = max(1, (int) $cartItem->quantity);
+
+            $unitOriginal = (float) ($cartItem->item?->activePrice?->base_price_amount ?? $cartItem->unit_price_snapshot ?? 0.0);
+            $unitFinal = (float) ($cartItem->item?->final_price ?? $cartItem->unit_price_snapshot ?? 0.0);
+            $lineOriginal = round($unitOriginal * $quantity, 2);
+            $lineFinal = round($unitFinal * $quantity, 2);
+
+            $total += $lineFinal;
+
+            $line = sprintf(
+                '* %s x%d = %s%s',
+                $itemName,
+                $quantity,
+                self::DEFAULT_CURRENCY_SYMBOL,
+                $this->formatAmount($lineFinal),
+            );
+
+            if ($cartItem->item?->has_offer === true) {
+                $hasAnyOffer = true;
+            }
+
+            if ($cartItem->item?->has_offer === true && $lineOriginal > $lineFinal) {
+                $line .= sprintf(' (was %s%s)', self::DEFAULT_CURRENCY_SYMBOL, $this->formatAmount($lineOriginal));
+            }
+
+            $orderLines[] = $line;
+        }
+
+        $parts = [
+            'Hello 👋',
+            '',
+            'Store: '.(string) $tenant->name,
+            '',
+            '🛒 Your Order:',
+            '',
+            ...$orderLines,
+            '',
+            '💰 Total: '.self::DEFAULT_CURRENCY_SYMBOL.$this->formatAmount($total),
+        ];
+
+        if ($hasAnyOffer) {
+            $parts[] = '🔥 Offers applied!';
+        }
+
+        $parts[] = '';
+        $parts[] = 'Please confirm and send your location 📍';
+
+        return implode("\n", $parts);
+    }
+
+    private function buildEncodedWhatsAppUrl(Tenant $tenant, string $message): ?string
+    {
+        $normalized = PhoneHelper::normalize($tenant->whatsapp_number);
+
+        if (!PhoneHelper::isValid($normalized)) {
+            return null;
+        }
+
+        return 'https://wa.me/'.$normalized.'?text='.rawurlencode($message);
+    }
+
+    private function formatAmount(float $amount): string
+    {
+        return number_format($amount, 2, '.', '');
     }
 
     /**

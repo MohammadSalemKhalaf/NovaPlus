@@ -9,6 +9,7 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class CatalogController extends Controller
 {
@@ -113,6 +114,24 @@ class CatalogController extends Controller
                         ->orderBy('id');
                 },
             ])
+            ->when(Schema::hasTable('offers') && Schema::hasTable('offer_items'), function ($query) use ($tenant): void {
+                $query->with([
+                    'offers' => function ($offersQuery) use ($tenant): void {
+                        $offersQuery
+                            ->where('offers.tenant_id', $tenant->id)
+                            ->select([
+                                'offers.id',
+                                'offers.tenant_id',
+                                'offers.title',
+                                'offers.discount_type',
+                                'offers.discount_value',
+                                'offers.starts_at',
+                                'offers.ends_at',
+                                'offers.status',
+                            ]);
+                    },
+                ]);
+            })
             ->orderBy('sort_order')
             ->orderByDesc('id')
             ->paginate($perPage);

@@ -11,6 +11,7 @@ use App\Services\Admin\ItemService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class ItemController extends Controller
 {
@@ -99,6 +100,10 @@ class ItemController extends Controller
                     $query
                         ->where('item_prices.tenant_id', $tenantId)
                         ->where('item_prices.pricing_status', 'active')
+                        ->where('item_prices.effective_from', '<=', now())
+                        ->where(function ($nested): void {
+                            $nested->whereNull('item_prices.effective_to')->orWhere('item_prices.effective_to', '>=', now());
+                        })
                         ->select([
                             'item_prices.id',
                             'item_prices.tenant_id',
@@ -108,10 +113,35 @@ class ItemController extends Controller
                         ]);
                 },
             ])
+            ->when(Schema::hasTable('offers') && Schema::hasTable('offer_items'), function ($query) use ($tenantId): void {
+                $query->with([
+                    'offers' => function ($offersQuery) use ($tenantId): void {
+                        $offersQuery
+                            ->where('offers.tenant_id', $tenantId)
+                            ->select([
+                                'offers.id',
+                                'offers.tenant_id',
+                                'offers.title',
+                                'offers.discount_type',
+                                'offers.discount_value',
+                                'offers.starts_at',
+                                'offers.ends_at',
+                                'offers.status',
+                            ]);
+                    },
+                ]);
+            })
             ->latest('id')
             ->paginate($perPage);
 
         $itemsData = collect($items->items())->map(function (Item $item): array {
+            $price = $item->activePrice !== null ? [
+                'amount' => (float) $item->activePrice->base_price_amount,
+                'currency' => $item->activePrice->currency_code,
+            ] : null;
+
+            $activeOffer = $item->active_offer;
+
             return [
                 'id' => $item->id,
                 'name' => $item->name,
@@ -119,9 +149,19 @@ class ItemController extends Controller
                     'id' => $item->category->id,
                     'name' => $item->category->name,
                 ] : null,
-                'price' => $item->activePrice !== null ? [
-                    'amount' => $item->activePrice->base_price_amount,
-                    'currency' => $item->activePrice->currency_code,
+                'price' => $price,
+                'final_price' => $price !== null ? [
+                    'amount' => $item->final_price,
+                    'currency' => $price['currency'],
+                ] : null,
+                'has_offer' => $item->has_offer,
+                'active_offer' => $activeOffer !== null ? [
+                    'id' => (int) $activeOffer->id,
+                    'title' => (string) $activeOffer->title,
+                    'discount_type' => $activeOffer->discount_type,
+                    'discount_value' => $activeOffer->discount_value,
+                    'starts_at' => $activeOffer->starts_at,
+                    'ends_at' => $activeOffer->ends_at,
                 ] : null,
                 'image' => $item->primaryImage?->storage_path,
                 'status' => $item->status,
@@ -199,7 +239,46 @@ class ItemController extends Controller
                         'item_images.updated_at',
                     ]);
             },
+            'activePrice' => function ($query) use ($tenantId): void {
+                $query
+                    ->where('item_prices.tenant_id', $tenantId)
+                    ->where('item_prices.pricing_status', 'active')
+                    ->where('item_prices.effective_from', '<=', now())
+                    ->where(function ($nested): void {
+                        $nested->whereNull('item_prices.effective_to')->orWhere('item_prices.effective_to', '>=', now());
+                    })
+                    ->select([
+                        'item_prices.id',
+                        'item_prices.tenant_id',
+                        'item_prices.item_id',
+                        'item_prices.currency_code',
+                        'item_prices.base_price_amount',
+                        'item_prices.compare_at_price_amount',
+                        'item_prices.pricing_status',
+                        'item_prices.effective_from',
+                        'item_prices.effective_to',
+                    ]);
+            },
         ]);
+
+        if (Schema::hasTable('offers') && Schema::hasTable('offer_items')) {
+            $item->load([
+                'offers' => function ($query) use ($tenantId): void {
+                    $query
+                        ->where('offers.tenant_id', $tenantId)
+                        ->select([
+                            'offers.id',
+                            'offers.tenant_id',
+                            'offers.title',
+                            'offers.discount_type',
+                            'offers.discount_value',
+                            'offers.starts_at',
+                            'offers.ends_at',
+                            'offers.status',
+                        ]);
+                },
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -391,7 +470,46 @@ class ItemController extends Controller
                         'item_images.updated_at',
                     ]);
             },
+            'activePrice' => function ($query) use ($tenantId): void {
+                $query
+                    ->where('item_prices.tenant_id', $tenantId)
+                    ->where('item_prices.pricing_status', 'active')
+                    ->where('item_prices.effective_from', '<=', now())
+                    ->where(function ($nested): void {
+                        $nested->whereNull('item_prices.effective_to')->orWhere('item_prices.effective_to', '>=', now());
+                    })
+                    ->select([
+                        'item_prices.id',
+                        'item_prices.tenant_id',
+                        'item_prices.item_id',
+                        'item_prices.currency_code',
+                        'item_prices.base_price_amount',
+                        'item_prices.compare_at_price_amount',
+                        'item_prices.pricing_status',
+                        'item_prices.effective_from',
+                        'item_prices.effective_to',
+                    ]);
+            },
         ]);
+
+        if (Schema::hasTable('offers') && Schema::hasTable('offer_items')) {
+            $record->load([
+                'offers' => function ($query) use ($tenantId): void {
+                    $query
+                        ->where('offers.tenant_id', $tenantId)
+                        ->select([
+                            'offers.id',
+                            'offers.tenant_id',
+                            'offers.title',
+                            'offers.discount_type',
+                            'offers.discount_value',
+                            'offers.starts_at',
+                            'offers.ends_at',
+                            'offers.status',
+                        ]);
+                },
+            ]);
+        }
 
         return response()->json([
             'success' => true,

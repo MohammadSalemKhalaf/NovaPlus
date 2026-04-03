@@ -4,9 +4,35 @@ namespace App\Repositories\Catalog;
 
 use App\Models\Offer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class OfferRepository
 {
+    /**
+     * @return Collection<int, Offer>
+     */
+    public function getActiveForPublicCatalog(int $tenantId): Collection
+    {
+        return Offer::query()
+            ->where('tenant_id', $tenantId)
+            ->where('status', 'active')
+            ->where(function ($query): void {
+                $query->whereNull('starts_at')->orWhere('starts_at', '<=', now());
+            })
+            ->where(function ($query): void {
+                $query->whereNull('ends_at')->orWhere('ends_at', '>=', now());
+            })
+            ->select([
+                'id',
+                'tenant_id',
+                'title',
+                'discount_type',
+                'discount_value',
+            ])
+            ->orderByDesc('id')
+            ->get();
+    }
+
     /**
      * @param array{per_page?: int, status?: string|null, search?: string|null} $filters
      */
@@ -85,5 +111,12 @@ class OfferRepository
         }
 
         return (bool) $offer->delete();
+    }
+
+    public function countForTenant(int $tenantId): int
+    {
+        return Offer::query()
+            ->where('tenant_id', $tenantId)
+            ->count();
     }
 }

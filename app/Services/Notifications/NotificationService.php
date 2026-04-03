@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class NotificationService
 {
+    private const RECIPIENT_CHUNK_SIZE = 1000;
+
     public function __construct(
         private readonly NotificationRepository $notificationRepository,
         private readonly NotificationRecipientResolver $recipientResolver,
@@ -39,6 +41,41 @@ class NotificationService
             payload: $payload,
             createdBy: $createdBy,
         );
+    }
+
+    /**
+     * @param array{type: string, title: string, body: string, notifiable_type: string, notifiable_id: int, related_type?: ?string, related_id?: ?int, priority?: string} $payload
+     * @param array<int, int> $recipientIds
+     */
+    public function sendBroadcast(array $payload, array $recipientIds, ?int $createdBy = null): ?Notification
+    {
+        if ($recipientIds === []) {
+            return null;
+        }
+
+        $uniqueRecipientIds = array_values(array_unique(array_map('intval', $recipientIds)));
+
+        return DB::transaction(function () use ($payload, $createdBy, $uniqueRecipientIds): Notification {
+            $notification = $this->notificationRepository->create([
+                'type' => $payload['type'],
+                'title' => $payload['title'],
+                'body' => $payload['body'],
+                'notifiable_type' => $payload['notifiable_type'],
+                'notifiable_id' => $payload['notifiable_id'],
+                'related_type' => $payload['related_type'] ?? null,
+                'related_id' => $payload['related_id'] ?? null,
+                'channel' => 'database',
+                'priority' => $payload['priority'] ?? 'normal',
+                'status' => 'sent',
+                'created_by' => $createdBy,
+            ]);
+
+            foreach (array_chunk($uniqueRecipientIds, self::RECIPIENT_CHUNK_SIZE) as $recipientChunk) {
+                $this->notificationRepository->attachRecipients((int) $notification->id, $recipientChunk);
+            }
+
+            return $notification;
+        });
     }
 
     /**

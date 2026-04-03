@@ -7,6 +7,7 @@ use App\Models\CartItem;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CartRepository
 {
@@ -15,7 +16,7 @@ class CartRepository
      */
     private function cartRelations(): array
     {
-        return [
+        $relations = [
             'tenant:id,name,slug,status,whatsapp_number,business_type_id',
             'items:id,cart_id,device_id,user_id,item_id,quantity,unit_price_snapshot',
             'items.item:id,tenant_id,name,slug,status,visibility',
@@ -40,6 +41,23 @@ class CartRepository
                 ]);
             },
         ];
+
+        if (Schema::hasTable('offers') && Schema::hasTable('offer_items')) {
+            $relations['items.item.offers'] = static function ($query): void {
+                $query->select([
+                    'offers.id',
+                    'offers.tenant_id',
+                    'offers.title',
+                    'offers.discount_type',
+                    'offers.discount_value',
+                    'offers.starts_at',
+                    'offers.ends_at',
+                    'offers.status',
+                ]);
+            };
+        }
+
+        return $relations;
     }
 
     public function findActiveByDeviceAndTenant(string $deviceId, int $tenantId): ?Cart

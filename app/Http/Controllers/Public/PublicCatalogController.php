@@ -170,6 +170,24 @@ class PublicCatalogController extends Controller
                             ]);
                     },
                 ])
+                ->when(Schema::hasTable('offers') && Schema::hasTable('offer_items'), function (Builder $query) use ($tenant): void {
+                    $query->with([
+                        'offers' => function ($offersQuery) use ($tenant): void {
+                            $offersQuery
+                                ->where('offers.tenant_id', $tenant->id)
+                                ->select([
+                                    'offers.id',
+                                    'offers.tenant_id',
+                                    'offers.title',
+                                    'offers.discount_type',
+                                    'offers.discount_value',
+                                    'offers.starts_at',
+                                    'offers.ends_at',
+                                    'offers.status',
+                                ]);
+                        },
+                    ]);
+                })
                 ->when(in_array($sort, ['price_asc', 'price_desc'], true), function (Builder $query) use ($tenant): void {
                     $query->addSelect([
                         'sort_price' => $this->activePriceAmountSubquery($tenant->id),
@@ -205,12 +223,29 @@ class PublicCatalogController extends Controller
 
             return [
                 'data' => collect($items->items())->map(function (Item $item): array {
+                    $price = $item->activePrice !== null ? [
+                        'amount' => (float) $item->activePrice->base_price_amount,
+                        'currency' => $item->activePrice->currency_code,
+                    ] : null;
+
+                    $activeOffer = $item->active_offer;
+
                     return [
                         'id' => $item->id,
                         'name' => $item->name,
-                        'price' => $item->activePrice !== null ? [
-                            'amount' => $item->activePrice->base_price_amount,
-                            'currency' => $item->activePrice->currency_code,
+                        'price' => $price,
+                        'final_price' => $price !== null ? [
+                            'amount' => $item->final_price,
+                            'currency' => $price['currency'],
+                        ] : null,
+                        'has_offer' => $item->has_offer,
+                        'active_offer' => $activeOffer !== null ? [
+                            'id' => (int) $activeOffer->id,
+                            'title' => (string) $activeOffer->title,
+                            'discount_type' => $activeOffer->discount_type,
+                            'discount_value' => $activeOffer->discount_value,
+                            'starts_at' => $activeOffer->starts_at,
+                            'ends_at' => $activeOffer->ends_at,
                         ] : null,
                         'image' => $item->primaryImage?->storage_path,
                         'category' => $item->category?->name,
@@ -332,6 +367,24 @@ class PublicCatalogController extends Controller
                         ]);
                 },
             ])
+                ->when(Schema::hasTable('offers') && Schema::hasTable('offer_items'), function (Builder $query) use ($tenant): void {
+                    $query->with([
+                        'offers' => function ($offersQuery) use ($tenant): void {
+                            $offersQuery
+                                ->where('offers.tenant_id', $tenant->id)
+                                ->select([
+                                    'offers.id',
+                                    'offers.tenant_id',
+                                    'offers.title',
+                                    'offers.discount_type',
+                                    'offers.discount_value',
+                                    'offers.starts_at',
+                                    'offers.ends_at',
+                                    'offers.status',
+                                ]);
+                        },
+                    ]);
+                })
             ->orderBy('items.id')
             ->paginate($perPage);
 
@@ -339,12 +392,29 @@ class PublicCatalogController extends Controller
             'success' => true,
             'message' => $items->total() === 0 ? 'No items found' : 'Catalog items fetched successfully.',
             'data' => collect($items->items())->map(function (Item $item): array {
+                $price = $item->activePrice !== null ? [
+                    'amount' => (float) $item->activePrice->base_price_amount,
+                    'currency' => $item->activePrice->currency_code,
+                ] : null;
+
+                $activeOffer = $item->active_offer;
+
                 return [
                     'id' => $item->id,
                     'name' => $item->name,
-                    'price' => $item->activePrice !== null ? [
-                        'amount' => $item->activePrice->base_price_amount,
-                        'currency' => $item->activePrice->currency_code,
+                    'price' => $price,
+                    'final_price' => $price !== null ? [
+                        'amount' => $item->final_price,
+                        'currency' => $price['currency'],
+                    ] : null,
+                    'has_offer' => $item->has_offer,
+                    'active_offer' => $activeOffer !== null ? [
+                        'id' => (int) $activeOffer->id,
+                        'title' => (string) $activeOffer->title,
+                        'discount_type' => $activeOffer->discount_type,
+                        'discount_value' => $activeOffer->discount_value,
+                        'starts_at' => $activeOffer->starts_at,
+                        'ends_at' => $activeOffer->ends_at,
                     ] : null,
                     'image' => $item->primaryImage?->storage_path,
                     'category' => $item->category?->name,
@@ -399,6 +469,24 @@ class PublicCatalogController extends Controller
                         ]);
                 },
             ])
+                ->when(Schema::hasTable('offers') && Schema::hasTable('offer_items'), function (Builder $query) use ($tenant): void {
+                    $query->with([
+                        'offers' => function ($offersQuery) use ($tenant): void {
+                            $offersQuery
+                                ->where('offers.tenant_id', $tenant->id)
+                                ->select([
+                                    'offers.id',
+                                    'offers.tenant_id',
+                                    'offers.title',
+                                    'offers.discount_type',
+                                    'offers.discount_value',
+                                    'offers.starts_at',
+                                    'offers.ends_at',
+                                    'offers.status',
+                                ]);
+                        },
+                    ]);
+                })
             ->first();
 
         if ($item === null) {
@@ -424,8 +512,21 @@ class PublicCatalogController extends Controller
                 'slug' => $item->slug,
                 'description' => $item->long_description,
                 'price' => $item->activePrice !== null ? [
-                    'amount' => $item->activePrice->base_price_amount,
+                    'amount' => (float) $item->activePrice->base_price_amount,
                     'currency' => $item->activePrice->currency_code,
+                ] : null,
+                'final_price' => $item->activePrice !== null ? [
+                    'amount' => $item->final_price,
+                    'currency' => $item->activePrice->currency_code,
+                ] : null,
+                'has_offer' => $item->has_offer,
+                'active_offer' => $item->active_offer !== null ? [
+                    'id' => (int) $item->active_offer->id,
+                    'title' => (string) $item->active_offer->title,
+                    'discount_type' => $item->active_offer->discount_type,
+                    'discount_value' => $item->active_offer->discount_value,
+                    'starts_at' => $item->active_offer->starts_at,
+                    'ends_at' => $item->active_offer->ends_at,
                 ] : null,
                 'image' => $item->primaryImage?->storage_path,
             ],

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\PublicStoreIndexRequest;
+use App\Http\Requests\Public\PublicStoreShowRequest;
 use App\Models\Tenant;
 use App\Services\Public\StoreDiscoveryService;
 use Illuminate\Http\JsonResponse;
@@ -46,9 +47,9 @@ class StoreDiscoveryController extends Controller
         ]);
     }
 
-    public function show(Tenant $tenant_slug): JsonResponse
+    public function show(PublicStoreShowRequest $request, Tenant $tenant_slug): JsonResponse
     {
-        $store = $this->storeDiscoveryService->getStoreByTenant($tenant_slug);
+        $store = $this->storeDiscoveryService->getStoreByTenant($tenant_slug, $request->validated());
 
         if ($store === null) {
             return response()->json([
@@ -73,6 +74,9 @@ class StoreDiscoveryController extends Controller
                     'items' => '/api/v1/public/catalog/'.$store['slug'].'/items',
                     'categories' => '/api/v1/public/catalog/'.$store['slug'].'/categories',
                 ],
+                'items' => $store['items'],
+                'top_items' => $store['top_items'],
+                'offers' => $store['offers'],
             ],
             'meta' => (object) [],
         ]);

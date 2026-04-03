@@ -12,6 +12,9 @@ class ItemResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $activePrice = $this->relationLoaded('activePrice') ? $this->activePrice : null;
+        $activeOffer = $this->active_offer;
+
         return [
             'id' => $this->id,
             'category_id' => $this->category_id,
@@ -26,6 +29,23 @@ class ItemResource extends JsonResource
             'sort_order' => $this->sort_order,
             'created_by_user_id' => $this->created_by_user_id,
             'updated_by_user_id' => $this->updated_by_user_id,
+            'price' => $activePrice !== null ? [
+                'amount' => (float) $activePrice->base_price_amount,
+                'currency' => $activePrice->currency_code,
+            ] : null,
+            'final_price' => $activePrice !== null ? [
+                'amount' => $this->final_price,
+                'currency' => $activePrice->currency_code,
+            ] : null,
+            'has_offer' => $this->has_offer,
+            'active_offer' => $activeOffer !== null ? [
+                'id' => (int) $activeOffer->id,
+                'title' => (string) $activeOffer->title,
+                'discount_type' => $activeOffer->discount_type,
+                'discount_value' => $activeOffer->discount_value,
+                'starts_at' => $activeOffer->starts_at,
+                'ends_at' => $activeOffer->ends_at,
+            ] : null,
             'category' => $this->whenLoaded('category', function () {
                 return [
                     'id' => $this->category->id,

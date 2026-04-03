@@ -3484,7 +3484,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/public/stores/{{public_tenant_slug}}",
+              "raw": "{{base_url}}/public/stores/{{public_tenant_slug}}?sort=top",
               "host": [
                 "{{base_url}}"
               ],
@@ -3492,6 +3492,12 @@
                 "public",
                 "stores",
                 "{{public_tenant_slug}}"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "top"
+                }
               ]
             }
           },
@@ -3504,7 +3510,52 @@
                   "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
                   "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Data exists', function () { pm.expect(json.data).to.not.equal(undefined); });"
+                  "pm.test('Items exists', function () { pm.expect(json.data.items).to.be.an('array'); });",
+                  "pm.test('Top items exists', function () { pm.expect(json.data.top_items).to.be.an('array'); });",
+                  "pm.test('Offers exists', function () { pm.expect(json.data.offers).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Show - Invalid Sort",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/public/stores/{{public_tenant_slug}}?sort=invalid",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "public",
+                "stores",
+                "{{public_tenant_slug}}"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "invalid"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 422', function () { pm.response.to.have.status(422); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Success false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('Sort validation exists', function () { pm.expect(json.errors.sort).to.be.an('array'); });"
                 ]
               }
             }
@@ -4039,7 +4090,9 @@
                   "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
                   "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('Has whatsapp url', function () { pm.expect(json.data.whatsapp_url).to.be.a('string'); });"
+                  "pm.test('Has whatsapp url', function () { pm.expect(json.data.whatsapp_url).to.be.a('string'); });",
+                  "pm.test('Preview has order section', function () { pm.expect(json.data.message_preview).to.include('🛒 Your Order:'); });",
+                  "pm.test('Preview has total line', function () { pm.expect(json.data.message_preview).to.include('💰 Total:'); });"
                 ]
               }
             }
@@ -4310,7 +4363,8 @@
                   "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
                   "pm.test('Stores payload exists', function () { pm.expect(json.data.stores).to.be.an('array'); });",
-                  "pm.test('WhatsApp URL exists', function () { pm.expect(json.data.whatsapp_url).to.be.a('string'); });"
+                  "pm.test('WhatsApp URL exists', function () { pm.expect(json.data.whatsapp_url).to.be.a('string'); });",
+                  "pm.test('Preview has location prompt', function () { pm.expect(json.data.message_preview).to.include('Please confirm and send your location'); });"
                 ]
               }
             }
@@ -4829,6 +4883,47 @@
               ]
             },
             {
+              "name": "Unread Count",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/enduser/notifications/unread-count",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "notifications",
+                    "unread-count"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Count is number', function () { pm.expect(json.data.count).to.be.a('number'); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
               "name": "Mark Notification Read",
               "request": {
                 "method": "POST",
@@ -4908,6 +5003,322 @@
                   }
                 }
               ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pricing Engine Checks",
+      "item": [
+        {
+          "name": "Owner Items Includes Final Price",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}"
+              },
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenant_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/owner/catalog/items?per_page=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "owner",
+                "catalog",
+                "items"
+              ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Items fetched successfully.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Milk 1L\",\n      \"price\": {\"amount\": 10, \"currency\": \"USD\"},\n      \"final_price\": {\"amount\": 8, \"currency\": \"USD\"},\n      \"has_offer\": true\n    }\n  ],\n  \"meta\": {\"pagination\": {\"current_page\": 1, \"per_page\": 5, \"total\": 1, \"last_page\": 1}}\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Envelope success true', function () { pm.expect(json.success).to.eql(true); });",
+                  "if (Array.isArray(json.data) && json.data.length > 0) {",
+                  "  pm.test('price exists', function () { pm.expect(json.data[0]).to.have.property('price'); });",
+                  "  pm.test('final_price exists', function () { pm.expect(json.data[0]).to.have.property('final_price'); });",
+                  "  pm.test('has_offer exists', function () { pm.expect(json.data[0]).to.have.property('has_offer'); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Public Items Includes Final Price",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/public/tenants/{{tenant_id}}/items?per_page=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "public",
+                "tenants",
+                "{{tenant_id}}",
+                "items"
+              ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Catalog items fetched successfully.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Milk 1L\",\n      \"price\": {\"amount\": 10, \"currency\": \"USD\"},\n      \"final_price\": {\"amount\": 8, \"currency\": \"USD\"},\n      \"has_offer\": true\n    }\n  ],\n  \"meta\": {\"pagination\": {\"current_page\": 1, \"per_page\": 5, \"total\": 1, \"last_page\": 1}}\n}"
+            },
+            {
+              "name": "404 Tenant Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Tenant not found.\",\n  \"data\": [],\n  \"meta\": {}\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Envelope success true', function () { pm.expect(json.success).to.eql(true); });",
+                  "if (Array.isArray(json.data) && json.data.length > 0) {",
+                  "  pm.test('price exists', function () { pm.expect(json.data[0]).to.have.property('price'); });",
+                  "  pm.test('final_price exists', function () { pm.expect(json.data[0]).to.have.property('final_price'); });",
+                  "  pm.test('has_offer exists', function () { pm.expect(json.data[0]).to.have.property('has_offer'); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Owner Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}"
+              },
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenant_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/owner/dashboard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "owner",
+                "dashboard"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('total_items is number', function () { pm.expect(json.data.total_items).to.be.a('number'); });",
+                  "pm.test('total_offers is number', function () { pm.expect(json.data.total_offers).to.be.a('number'); });",
+                  "pm.test('followers_count is number', function () { pm.expect(json.data.followers_count).to.be.a('number'); });",
+                  "pm.test('top_items is array', function () { pm.expect(json.data.top_items).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin Notifications",
+      "item": [
+        {
+          "name": "Broadcast - Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{super_admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Platform Notice\",\n  \"body\": \"A scheduled maintenance window starts tonight at 11:00 PM UTC.\",\n  \"target\": \"role\",\n  \"role\": \"end_user\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/notifications/broadcast",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "notifications",
+                "broadcast"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('notification_id exists', function () { pm.expect(json.data).to.have.property('notification_id'); });",
+                  "pm.test('recipients_count is number', function () { pm.expect(json.data.recipients_count).to.be.a('number'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Broadcast - Validation Error",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{super_admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Invalid Target\",\n  \"body\": \"Should fail\",\n  \"target\": \"invalid\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/notifications/broadcast",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "notifications",
+                "broadcast"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 422', function () { pm.response.to.have.status(422); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Validation error exists', function () { pm.expect(json.errors).to.have.property('target'); });"
+                ]
+              }
             }
           ]
         }
