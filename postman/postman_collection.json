@@ -5325,927 +5325,1789 @@
       ]
     },
     {
-      "name": "Chat Core Phase 1",
+      "name": "Chat",
       "item": [
         {
-          "name": "EndUser - Start Conversation",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{enduser_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"tenant_id\": {{tenant_id}}\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/enduser/conversations/start",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "enduser",
-                "conversations",
-                "start"
-              ]
-            }
-          },
-          "event": [
+          "name": "1. Conversations",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('conversation id exists', function () { pm.expect(json.data.conversation.id).to.be.a('number'); });",
-                  "pm.environment.set('conversation_id', String(json.data.conversation.id));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "EndUser - Send Message",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{enduser_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"body\": \"Hello, I need help with my order.\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "name": "Start Conversation",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"tenant_id\": {{tenant_id}}\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/enduser/conversations/start",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "conversations",
+                    "start"
+                  ]
                 }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/enduser/messages",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "enduser",
-                "messages"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('sender type is end_user', function () { pm.expect(json.data.message.sender_type).to.eql('end_user'); });"
-                  ,"pm.environment.set('message_id', String(json.data.message.id));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Owner - Conversations List",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
               },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{owner_token}}"
-              },
-              {
-                "key": "X-Tenant-ID",
-                "value": "{{tenant_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/owner/conversations?per_page=15",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "owner",
-                "conversations"
-              ],
-              "query": [
+              "event": [
                 {
-                  "key": "per_page",
-                  "value": "15"
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('conversation id exists', function () { pm.expect(json.data.conversation.id).to.be.a('number'); });",
+                      "pm.environment.set('conversation_id', String(json.data.conversation.id));"
+                    ]
+                  }
                 }
               ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Data is array', function () { pm.expect(json.data).to.be.an('array'); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Owner - Send Message",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{owner_token}}"
-              },
-              {
-                "key": "X-Tenant-ID",
-                "value": "{{tenant_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"body\": \"Thanks, we are checking and will update you soon.\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             },
-            "url": {
-              "raw": "{{base_url}}/owner/messages",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "owner",
-                "messages"
-              ]
-            }
-          },
-          "event": [
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('sender type is owner', function () { pm.expect(json.data.message.sender_type).to.eql('owner'); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Conversation - List Messages",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
+              "name": "Owner Conversations List",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}"
+                  },
+                  {
+                    "key": "X-Tenant-ID",
+                    "value": "{{tenant_id}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/owner/conversations?per_page=15",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "owner",
+                    "conversations"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "15"
+                    }
+                  ]
+                }
               },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{enduser_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/conversations/{{conversation_id}}/messages?per_page=30",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "conversations",
-                "{{conversation_id}}",
-                "messages"
-              ],
-              "query": [
+              "event": [
                 {
-                  "key": "per_page",
-                  "value": "30"
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Data is array', function () { pm.expect(json.data).to.be.an('array'); });"
+                    ]
+                  }
                 }
               ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Messages array exists', function () { pm.expect(json.data).to.be.an('array'); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Conversation - Mark Read",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{enduser_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/conversations/{{conversation_id}}/read",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "conversations",
-                "{{conversation_id}}",
-                "read"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('updated_count exists', function () { pm.expect(json.data.updated_count).to.be.a('number'); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "EndUser - Send Media Message (Image)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{enduser_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"media_url\": \"https://example.com/image.jpg\",\n  \"media_type\": \"image\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             },
-            "url": {
-              "raw": "{{base_url}}/enduser/messages/media",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "enduser",
-                "messages",
-                "media"
-              ]
-            }
-          },
-          "event": [
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                  "pm.test('message type is image', function () { pm.expect(json.data.message.message_type).to.eql('image'); });",
-                  "pm.test('media_url exists', function () { pm.expect(json.data.message.media_url).to.exist; });",
-                  "pm.test('media_type is image', function () { pm.expect(json.data.message.media_type).to.eql('image'); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "EndUser - Send Media Message (Voice)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{enduser_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"media_url\": \"https://example.com/voice.mp3\",\n  \"media_type\": \"voice\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "name": "List Messages",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/conversations/{{conversation_id}}/messages?per_page=50",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "conversations",
+                    "{{conversation_id}}",
+                    "messages"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "50"
+                    }
+                  ]
                 }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/enduser/messages/media",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "enduser",
-                "messages",
-                "media"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('message type is voice', function () { pm.expect(json.data.message.message_type).to.eql('voice'); });",
-                  "pm.test('media_type is voice', function () { pm.expect(json.data.message.media_type).to.eql('voice'); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "EndUser - Send Product Message",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
               },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{enduser_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"tenant_id\": {{tenant_id}},\n  \"product_id\": 1\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/enduser/messages/product",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "enduser",
-                "messages",
-                "product"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('message type is product', function () { pm.expect(json.data.message.message_type).to.eql('product'); });",
-                  "pm.test('metadata type is product', function () { pm.expect(json.data.message.metadata.type).to.eql('product'); });",
-                  "pm.test('metadata payload contains product_id', function () { pm.expect(json.data.message.metadata.payload.product_id).to.eql(1); });",
-                  "pm.test('order draft exists', function () { pm.expect(json.data.order_draft).to.exist; });",
-                  "pm.environment.set('conversation_id', String(json.data.conversation.id));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "EndUser - Send Intent Message",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{enduser_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"tenant_id\": {{tenant_id}},\n  \"intent_type\": \"order_request\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/enduser/messages/intent",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "enduser",
-                "messages",
-                "intent"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('metadata type is intent', function () { pm.expect(json.data.message.metadata.type).to.eql('intent'); });",
-                  "pm.test('intent_type is order_request', function () { pm.expect(json.data.message.metadata.payload.intent_type).to.eql('order_request'); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "EndUser - Send Message with Reply",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{enduser_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"body\": \"This is a reply to a previous message\",\n  \"reply_to_message_id\": 1\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/enduser/messages",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "enduser",
-                "messages"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('reply_to_message_id exists', function () { pm.expect(json.data.message.reply_to_message_id).to.eql(1); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Conversation - Message with Invalid Media Type",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{enduser_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"media_url\": \"https://example.com/file.pdf\",\n  \"media_type\": \"pdf\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/enduser/messages/media",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "enduser",
-                "messages",
-                "media"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 422', function () { pm.response.to.have.status(422); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Validation error exists', function () { pm.expect(json.errors).to.exist; });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Owner - Send Message with Reply",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{owner_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"body\": \"Owner reply to customer message\",\n  \"reply_to_message_id\": 1\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/owner/messages",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "owner",
-                "messages"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('sender_type is owner', function () { pm.expect(json.data.message.sender_type).to.eql('owner'); });",
-                  "pm.test('reply_to_message_id exists', function () { pm.expect(json.data.message.reply_to_message_id).to.eql(1); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Message Reaction - Add Like",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{enduser_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reaction\": \"like\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/messages/{{message_id}}/react",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "messages",
-                "{{message_id}}",
-                "react"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('reaction_type is like', function () { pm.expect(json.data.reaction_type).to.eql('like'); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Message Reaction - Update to Love",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{enduser_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reaction\": \"love\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/messages/{{message_id}}/react",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "messages",
-                "{{message_id}}",
-                "react"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
-                  "const json = pm.response.json();",
-                  "pm.test('reaction_type is love', function () { pm.expect(json.data.reaction_type).to.eql('love'); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Conversation - List Messages with Rich Content",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{enduser_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/conversations/{{conversation_id}}/messages?per_page=50",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "conversations",
-                "{{conversation_id}}",
-                "messages"
-              ],
-              "query": [
+              "event": [
                 {
-                  "key": "per_page",
-                  "value": "50"
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Messages array exists', function () { pm.expect(json.data).to.be.an('array'); });",
+                      "pm.test('First message has reactions_count', function () { pm.expect(json.data[0]).to.have.property('reactions_count'); });",
+                      "pm.test('First message has user_reaction', function () { pm.expect(json.data[0]).to.have.property('user_reaction'); });"
+                    ]
+                  }
                 }
               ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('Messages array exists', function () { pm.expect(json.data).to.be.an('array'); });",
-                  "pm.test('First message has reactions_count', function () { pm.expect(json.data[0]).to.have.property('reactions_count'); });",
-                  "pm.test('First message has user_reaction', function () { pm.expect(json.data[0]).to.have.property('user_reaction'); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Message Reaction - Remove",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{enduser_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/messages/{{message_id}}/react",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "messages",
-                "{{message_id}}",
-                "react"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
-                  "const json = pm.response.json();",
-                  "pm.test('removed_count exists', function () { pm.expect(json.data.removed_count).to.be.a('number'); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Conversation - Validation Error",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{enduser_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"conversation_id\": 0,\n  \"body\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             },
-            "url": {
-              "raw": "{{base_url}}/enduser/messages",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "enduser",
-                "messages"
+            {
+              "name": "Mark Read",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/conversations/{{conversation_id}}/read",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "conversations",
+                    "{{conversation_id}}",
+                    "read"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('updated_count exists', function () { pm.expect(json.data.updated_count).to.be.a('number'); });"
+                    ]
+                  }
+                }
               ]
             }
-          },
-          "event": [
+          ]
+        },
+        {
+          "name": "2. Messages (Core)",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 422', function () { pm.response.to.have.status(422); });"
-                ]
-              }
+              "name": "EndUser Send Message",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"body\": \"Hello, I need help with my order.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/enduser/messages",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "messages"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('sender type is end_user', function () { pm.expect(json.data.message.sender_type).to.eql('end_user'); });",
+                      "pm.environment.set('message_id', String(json.data.message.id));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Owner Send Message",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{owner_token}}"
+                  },
+                  {
+                    "key": "X-Tenant-ID",
+                    "value": "{{tenant_id}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"body\": \"Thanks, we are checking and will update you soon.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/owner/messages",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "owner",
+                    "messages"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('sender type is owner', function () { pm.expect(json.data.message.sender_type).to.eql('owner'); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Send Message with Reply",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"body\": \"This is a reply to a previous message\",\n  \"reply_to_message_id\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/enduser/messages",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "messages"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('reply_to_message_id exists', function () { pm.expect(json.data.message.reply_to_message_id).to.eql(1); });"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "3. Media Messages",
+          "item": [
+            {
+              "name": "Send Image Message",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"media_url\": \"https://example.com/image.jpg\",\n  \"media_type\": \"image\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/enduser/messages/media",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "messages",
+                    "media"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('message type is image', function () { pm.expect(json.data.message.message_type).to.eql('image'); });",
+                      "pm.test('media_url exists', function () { pm.expect(json.data.message.media_url).to.exist; });",
+                      "pm.test('media_type is image', function () { pm.expect(json.data.message.media_type).to.eql('image'); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Send Voice Message",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"media_url\": \"https://example.com/voice.mp3\",\n  \"media_type\": \"voice\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/enduser/messages/media",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "messages",
+                    "media"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('message type is voice', function () { pm.expect(json.data.message.message_type).to.eql('voice'); });",
+                      "pm.test('media_type is voice', function () { pm.expect(json.data.message.media_type).to.eql('voice'); });"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "4. Product & Intent",
+          "item": [
+            {
+              "name": "Send Product Message",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"tenant_id\": {{tenant_id}},\n  \"product_id\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/enduser/messages/product",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "messages",
+                    "product"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('message type is product', function () { pm.expect(json.data.message.message_type).to.eql('product'); });",
+                      "pm.test('metadata type is product', function () { pm.expect(json.data.message.metadata.type).to.eql('product'); });",
+                      "pm.test('metadata payload contains product_id', function () { pm.expect(json.data.message.metadata.payload.product_id).to.eql(1); });",
+                      "pm.test('order draft exists', function () { pm.expect(json.data.order_draft).to.exist; });",
+                      "pm.environment.set('conversation_id', String(json.data.conversation.id));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Send Intent Message",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"tenant_id\": {{tenant_id}},\n  \"intent_type\": \"order_request\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/enduser/messages/intent",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "messages",
+                    "intent"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('metadata type is intent', function () { pm.expect(json.data.message.metadata.type).to.eql('intent'); });",
+                      "pm.test('intent_type is order_request', function () { pm.expect(json.data.message.metadata.payload.intent_type).to.eql('order_request'); });"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "5. Reactions",
+          "item": [
+            {
+              "name": "Add Reaction",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reaction\": \"like\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/messages/{{message_id}}/react",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "messages",
+                    "{{message_id}}",
+                    "react"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('reaction_type is like', function () { pm.expect(json.data.reaction_type).to.eql('like'); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Update Reaction",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reaction\": \"love\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/messages/{{message_id}}/react",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "messages",
+                    "{{message_id}}",
+                    "react"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('reaction_type is love', function () { pm.expect(json.data.reaction_type).to.eql('love'); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Remove Reaction",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/messages/{{message_id}}/react",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "messages",
+                    "{{message_id}}",
+                    "react"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('removed_count exists', function () { pm.expect(json.data.removed_count).to.be.a('number'); });"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "6. Edge Cases",
+          "item": [
+            {
+              "name": "Invalid Message",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"conversation_id\": 0,\n  \"body\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/enduser/messages",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "messages"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 422', function () { pm.response.to.have.status(422); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Cross Conversation Reply",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"body\": \"This is a reply to a previous message\",\n  \"reply_to_message_id\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/enduser/messages",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "messages"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('reply_to_message_id exists', function () { pm.expect(json.data.message.reply_to_message_id).to.eql(1); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Unauthorized Access",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"body\": \"Hello, I need help with my order.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/enduser/messages",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "messages"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                      "const json = pm.response.json();",
+                      "pm.test('sender type is end_user', function () { pm.expect(json.data.message.sender_type).to.eql('end_user'); });",
+                      "pm.environment.set('message_id', String(json.data.message.id));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "7. QA Flows (NEW)",
+          "item": [
+            {
+              "name": "Flow 1 - Basic Chat Flow",
+              "item": [
+                {
+                  "name": "1) Start Conversation",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{enduser_token}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"tenant_id\": {{tenant_id}}\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/enduser/conversations/start",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "enduser",
+                        "conversations",
+                        "start"
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                          "const json = pm.response.json();",
+                          "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                          "pm.test('conversation id exists', function () { pm.expect(json.data.conversation.id).to.be.a('number'); });",
+                          "pm.environment.set('conversation_id', String(json.data.conversation.id));"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "2) Send Message (EndUser)",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{enduser_token}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"body\": \"Hello, I need help with my order.\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/enduser/messages",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "enduser",
+                        "messages"
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                          "const json = pm.response.json();",
+                          "pm.test('sender type is end_user', function () { pm.expect(json.data.message.sender_type).to.eql('end_user'); });",
+                          "pm.environment.set('message_id', String(json.data.message.id));"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "3) Owner Conversations List",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{owner_token}}"
+                      },
+                      {
+                        "key": "X-Tenant-ID",
+                        "value": "{{tenant_id}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/owner/conversations?per_page=15",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "owner",
+                        "conversations"
+                      ],
+                      "query": [
+                        {
+                          "key": "per_page",
+                          "value": "15"
+                        }
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                          "const json = pm.response.json();",
+                          "pm.test('Data is array', function () { pm.expect(json.data).to.be.an('array'); });"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "4) Owner Send Message",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{owner_token}}"
+                      },
+                      {
+                        "key": "X-Tenant-ID",
+                        "value": "{{tenant_id}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"body\": \"Thanks, we are checking and will update you soon.\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/owner/messages",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "owner",
+                        "messages"
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                          "const json = pm.response.json();",
+                          "pm.test('sender type is owner', function () { pm.expect(json.data.message.sender_type).to.eql('owner'); });"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "5) List Messages",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{enduser_token}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/conversations/{{conversation_id}}/messages?per_page=50",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "conversations",
+                        "{{conversation_id}}",
+                        "messages"
+                      ],
+                      "query": [
+                        {
+                          "key": "per_page",
+                          "value": "50"
+                        }
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                          "const json = pm.response.json();",
+                          "pm.test('Messages array exists', function () { pm.expect(json.data).to.be.an('array'); });",
+                          "pm.test('First message has reactions_count', function () { pm.expect(json.data[0]).to.have.property('reactions_count'); });",
+                          "pm.test('First message has user_reaction', function () { pm.expect(json.data[0]).to.have.property('user_reaction'); });"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "6) Mark Read",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{enduser_token}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/conversations/{{conversation_id}}/read",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "conversations",
+                        "{{conversation_id}}",
+                        "read"
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                          "const json = pm.response.json();",
+                          "pm.test('updated_count exists', function () { pm.expect(json.data.updated_count).to.be.a('number'); });"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Flow 2 - Product Chat Flow",
+              "item": [
+                {
+                  "name": "1) Send Product Message",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{enduser_token}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"tenant_id\": {{tenant_id}},\n  \"product_id\": 1\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/enduser/messages/product",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "enduser",
+                        "messages",
+                        "product"
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                          "const json = pm.response.json();",
+                          "pm.test('message type is product', function () { pm.expect(json.data.message.message_type).to.eql('product'); });",
+                          "pm.test('metadata type is product', function () { pm.expect(json.data.message.metadata.type).to.eql('product'); });",
+                          "pm.test('metadata payload contains product_id', function () { pm.expect(json.data.message.metadata.payload.product_id).to.eql(1); });",
+                          "pm.test('order draft exists', function () { pm.expect(json.data.order_draft).to.exist; });",
+                          "pm.environment.set('conversation_id', String(json.data.conversation.id));"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "2) Owner Conversations List",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{owner_token}}"
+                      },
+                      {
+                        "key": "X-Tenant-ID",
+                        "value": "{{tenant_id}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/owner/conversations?per_page=15",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "owner",
+                        "conversations"
+                      ],
+                      "query": [
+                        {
+                          "key": "per_page",
+                          "value": "15"
+                        }
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                          "const json = pm.response.json();",
+                          "pm.test('Data is array', function () { pm.expect(json.data).to.be.an('array'); });"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "3) Owner Send Message",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{owner_token}}"
+                      },
+                      {
+                        "key": "X-Tenant-ID",
+                        "value": "{{tenant_id}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"body\": \"Thanks, we are checking and will update you soon.\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/owner/messages",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "owner",
+                        "messages"
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                          "const json = pm.response.json();",
+                          "pm.test('sender type is owner', function () { pm.expect(json.data.message.sender_type).to.eql('owner'); });"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "4) List Messages",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{enduser_token}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/conversations/{{conversation_id}}/messages?per_page=50",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "conversations",
+                        "{{conversation_id}}",
+                        "messages"
+                      ],
+                      "query": [
+                        {
+                          "key": "per_page",
+                          "value": "50"
+                        }
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                          "const json = pm.response.json();",
+                          "pm.test('Messages array exists', function () { pm.expect(json.data).to.be.an('array'); });",
+                          "pm.test('First message has reactions_count', function () { pm.expect(json.data[0]).to.have.property('reactions_count'); });",
+                          "pm.test('First message has user_reaction', function () { pm.expect(json.data[0]).to.have.property('user_reaction'); });"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Flow 3 - Reaction Flow",
+              "item": [
+                {
+                  "name": "1) Add Reaction",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{enduser_token}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"reaction\": \"like\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/messages/{{message_id}}/react",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "messages",
+                        "{{message_id}}",
+                        "react"
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                          "const json = pm.response.json();",
+                          "pm.test('reaction_type is like', function () { pm.expect(json.data.reaction_type).to.eql('like'); });"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "2) Update Reaction",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{enduser_token}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"reaction\": \"love\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/messages/{{message_id}}/react",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "messages",
+                        "{{message_id}}",
+                        "react"
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                          "const json = pm.response.json();",
+                          "pm.test('reaction_type is love', function () { pm.expect(json.data.reaction_type).to.eql('love'); });"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "3) Remove Reaction",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{enduser_token}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/messages/{{message_id}}/react",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "messages",
+                        "{{message_id}}",
+                        "react"
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                          "const json = pm.response.json();",
+                          "pm.test('removed_count exists', function () { pm.expect(json.data.removed_count).to.be.a('number'); });"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "4) List Messages",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{enduser_token}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/conversations/{{conversation_id}}/messages?per_page=50",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "conversations",
+                        "{{conversation_id}}",
+                        "messages"
+                      ],
+                      "query": [
+                        {
+                          "key": "per_page",
+                          "value": "50"
+                        }
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                          "const json = pm.response.json();",
+                          "pm.test('Messages array exists', function () { pm.expect(json.data).to.be.an('array'); });",
+                          "pm.test('First message has reactions_count', function () { pm.expect(json.data[0]).to.have.property('reactions_count'); });",
+                          "pm.test('First message has user_reaction', function () { pm.expect(json.data[0]).to.have.property('user_reaction'); });"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Flow 4 - Reply Flow",
+              "item": [
+                {
+                  "name": "1) Send Message",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{enduser_token}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"body\": \"Hello, I need help with my order.\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/enduser/messages",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "enduser",
+                        "messages"
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                          "const json = pm.response.json();",
+                          "pm.test('sender type is end_user', function () { pm.expect(json.data.message.sender_type).to.eql('end_user'); });",
+                          "pm.environment.set('message_id', String(json.data.message.id));"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "2) Send Reply Message",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{enduser_token}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"body\": \"This is a reply to a previous message\",\n  \"reply_to_message_id\": 1\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/enduser/messages",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "enduser",
+                        "messages"
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                          "const json = pm.response.json();",
+                          "pm.test('reply_to_message_id exists', function () { pm.expect(json.data.message.reply_to_message_id).to.eql(1); });"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "3) List Messages",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{enduser_token}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/conversations/{{conversation_id}}/messages?per_page=50",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "conversations",
+                        "{{conversation_id}}",
+                        "messages"
+                      ],
+                      "query": [
+                        {
+                          "key": "per_page",
+                          "value": "50"
+                        }
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                          "const json = pm.response.json();",
+                          "pm.test('Messages array exists', function () { pm.expect(json.data).to.be.an('array'); });",
+                          "pm.test('First message has reactions_count', function () { pm.expect(json.data[0]).to.have.property('reactions_count'); });",
+                          "pm.test('First message has user_reaction', function () { pm.expect(json.data[0]).to.have.property('user_reaction'); });"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
