@@ -34,4 +34,21 @@ class NotificationPayloadBuilder
             'related_id' => (int) $offer->id,
         ];
     }
+
+    /**
+     * @return array{type: string, title: string, body: string}
+     */
+    public function buildChatMessagePayload(string $tenantName, string $senderName, bool $forOwner): array
+    {
+        $safeTenantName = trim($tenantName) !== '' ? $tenantName : 'Store';
+        $safeSenderName = trim($senderName) !== '' ? $senderName : 'User';
+
+        return [
+            'type' => 'chat_message',
+            'title' => $forOwner ? 'New message from customer' : 'New message from store',
+            'body' => $forOwner
+                ? sprintf('%s sent a new message in %s chat.', $safeSenderName, $safeTenantName)
+                : sprintf('%s replied to your chat with %s.', $safeSenderName, $safeTenantName),
+        ];
+    }
 }

@@ -17,8 +17,12 @@ use App\Http\Controllers\Admin\TenantControlController;
 use App\Http\Controllers\Admin\TenantUserController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\ConversationMessageController;
+use App\Http\Controllers\EndUser\ConversationController as EndUserConversationController;
 use App\Http\Controllers\Owner\CategoryController as OwnerCategoryController;
+use App\Http\Controllers\Owner\ConversationController as OwnerConversationController;
 use App\Http\Controllers\Owner\ItemController as OwnerItemController;
+use App\Http\Controllers\Owner\MessageController as OwnerMessageController;
 use App\Http\Controllers\Owner\OfferController as OwnerOfferController;
 use App\Http\Controllers\Owner\ProfileController as OwnerProfileController;
 use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
@@ -33,6 +37,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EndUser\EndUserAuthController;
 use App\Http\Controllers\EndUser\FavoritesController;
 use App\Http\Controllers\EndUser\GuestCart\GuestCartController;
+use App\Http\Controllers\EndUser\MessageController as EndUserMessageController;
 use App\Http\Controllers\EndUser\NotificationsController;
 use App\Http\Controllers\EndUser\PreferencesController;
 use App\Http\Controllers\EndUser\RecentlyViewedController;
@@ -163,6 +168,8 @@ Route::prefix('v1/owner')
     ->middleware(['auth:sanctum', 'tenant.resolve', 'tenant.access', 'tenant.owner'])
     ->group(function (): void {
         Route::get('dashboard', [OwnerDashboardController::class, 'index']);
+        Route::get('conversations', [OwnerConversationController::class, 'index']);
+        Route::post('messages', [OwnerMessageController::class, 'store']);
         Route::put('profile', [OwnerProfileController::class, 'updateProfile']);
 
         Route::prefix('offers')->group(function (): void {
@@ -245,8 +252,23 @@ Route::prefix('v1/enduser')->group(function (): void {
             Route::post('{id}/read', [NotificationsController::class, 'markAsRead'])->whereNumber('id');
             Route::get('/', [NotificationsController::class, 'index']);
         });
+
+        Route::prefix('conversations')->group(function (): void {
+            Route::post('start', [EndUserConversationController::class, 'start']);
+        });
+
+        Route::post('messages', [EndUserMessageController::class, 'store']);
+        Route::post('messages/media', [EndUserMessageController::class, 'storeMedia']);
+        Route::post('messages/product', [EndUserMessageController::class, 'storeProduct']);
     });
 });
+
+Route::prefix('v1/conversations')
+    ->middleware('auth:sanctum')
+    ->group(function (): void {
+        Route::get('{id}/messages', [ConversationMessageController::class, 'index'])->whereNumber('id');
+        Route::post('{id}/read', [ConversationMessageController::class, 'markAsRead'])->whereNumber('id');
+    });
 
 Route::prefix('v1/sales-agent')
     ->middleware('auth:sanctum')

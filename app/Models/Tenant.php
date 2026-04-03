@@ -105,5 +105,10 @@ class Tenant extends Model
     {
         return $this->hasMany(Cart::class, 'tenant_id');
     }
+
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'tenant_id');
+    }
 }
 

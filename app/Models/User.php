@@ -173,5 +173,15 @@ class User extends Authenticatable
     {
         return $this->hasOne(NotificationPreference::class, 'user_id');
     }
+
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'end_user_id');
+    }
+
+    public function conversationMessages(): HasMany
+    {
+        return $this->hasMany(ConversationMessage::class, 'sender_id');
+    }
 }
 
