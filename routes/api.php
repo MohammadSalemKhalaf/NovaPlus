@@ -172,6 +172,8 @@ Route::prefix('v1/public')->group(function (): void {
 
     Route::get('cart', [CartController::class, 'show']);
     Route::post('cart/items', [CartController::class, 'addItem']);
+    Route::post('cart/items/increment', [CartController::class, 'incrementItem']);
+    Route::post('cart/items/decrement', [CartController::class, 'decrementItem']);
     Route::delete('cart/items/{item_id}', [CartController::class, 'removeItem']);
     Route::post('cart/clear', [CartController::class, 'clear']);
     Route::post('cart/checkout-whatsapp', [CartController::class, 'checkoutWhatsApp']);

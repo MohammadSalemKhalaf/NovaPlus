@@ -3592,15 +3592,20 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"item_id\": {{item_id}}\n}"
+              "raw": "{\n  \"item_id\": {{item_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
-              "raw": "{{base_url}}/cart/items/increment",
-              "protocol": "http",
+              "raw": "{{base_url}}/public/cart/items/increment",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "public",
                 "cart",
                 "items",
                 "increment"
@@ -3609,7 +3614,7 @@
           },
           "response": [
             {
-              "name": "200",
+              "name": "200 OK",
               "originalRequest": {
                 "method": "POST",
                 "header": [
@@ -3618,21 +3623,30 @@
                     "value": "application/json"
                   },
                   {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
                     "key": "X-Device-ID",
-                    "value": "test-device-123"
+                    "value": "{{device_id}}"
                   }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"item_id\": 1\n}"
+                  "raw": "{\n  \"item_id\": {{item_id}}\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
-                  "raw": "{{base_url}}/cart/items/increment",
-                  "protocol": "http",
+                  "raw": "{{base_url}}/public/cart/items/increment",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
+                    "public",
                     "cart",
                     "items",
                     "increment"
@@ -3648,27 +3662,20 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Item quantity increased successfully.\",\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"device_id\": \"test-device-123\",\n    \"tenant_id\": 1,\n    \"total_price\": 250,\n    \"items\": [\n      {\n        \"id\": 1,\n        \"name\": \"Item Name\",\n        \"quantity\": 2,\n        \"unit_price\": 100,\n        \"total_price\": 200\n      }\n    ]\n  },\n  \"meta\": {}\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Item quantity increased successfully.\",\n  \"data\": {\n    \"cart\": {\n      \"id\": 1,\n      \"device_id\": \"{{device_id}}\",\n      \"store\": {\n        \"id\": 1,\n        \"name\": \"Sample Store\",\n        \"slug\": \"sample-store\"\n      },\n      \"items\": [],\n      \"totals\": {\n        \"subtotal\": 0\n      }\n    }\n  },\n  \"meta\": {}\n}"
             }
           ],
           "event": [
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status code is 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test('Response has success: true', function () {",
-                  "    pm.expect(pm.response.json().success).to.be.true;",
-                  "});",
-                  "",
-                  "pm.test('Cart items present', function () {",
-                  "    pm.expect(pm.response.json().data.items).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript"
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('Cart payload exists', function () { pm.expect(json.data.cart).to.exist; });"
+                ]
               }
             }
           ]
@@ -3693,15 +3700,20 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"item_id\": {{item_id}}\n}"
+              "raw": "{\n  \"item_id\": {{item_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
-              "raw": "{{base_url}}/cart/items/decrement",
-              "protocol": "http",
+              "raw": "{{base_url}}/public/cart/items/decrement",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "public",
                 "cart",
                 "items",
                 "decrement"
@@ -3710,7 +3722,7 @@
           },
           "response": [
             {
-              "name": "200",
+              "name": "200 OK",
               "originalRequest": {
                 "method": "POST",
                 "header": [
@@ -3719,21 +3731,30 @@
                     "value": "application/json"
                   },
                   {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
                     "key": "X-Device-ID",
-                    "value": "test-device-123"
+                    "value": "{{device_id}}"
                   }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"item_id\": 1\n}"
+                  "raw": "{\n  \"item_id\": {{item_id}}\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
-                  "raw": "{{base_url}}/cart/items/decrement",
-                  "protocol": "http",
+                  "raw": "{{base_url}}/public/cart/items/decrement",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
+                    "public",
                     "cart",
                     "items",
                     "decrement"
@@ -3749,27 +3770,20 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Item quantity decreased successfully.\",\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"device_id\": \"test-device-123\",\n    \"tenant_id\": 1,\n    \"total_price\": 100,\n    \"items\": [\n      {\n        \"id\": 1,\n        \"name\": \"Item Name\",\n        \"quantity\": 1,\n        \"unit_price\": 100,\n        \"total_price\": 100\n      }\n    ]\n  },\n  \"meta\": {}\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Item quantity decreased successfully.\",\n  \"data\": {\n    \"cart\": {\n      \"id\": 1,\n      \"device_id\": \"{{device_id}}\",\n      \"store\": {\n        \"id\": 1,\n        \"name\": \"Sample Store\",\n        \"slug\": \"sample-store\"\n      },\n      \"items\": [],\n      \"totals\": {\n        \"subtotal\": 0\n      }\n    }\n  },\n  \"meta\": {}\n}"
             }
           ],
           "event": [
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status code is 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test('Response has success: true', function () {",
-                  "    pm.expect(pm.response.json().success).to.be.true;",
-                  "});",
-                  "",
-                  "pm.test('Cart items present', function () {",
-                  "    pm.expect(pm.response.json().data.items).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript"
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('Cart payload exists', function () { pm.expect(json.data.cart).to.exist; });"
+                ]
               }
             }
           ]

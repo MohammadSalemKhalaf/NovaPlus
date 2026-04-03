@@ -135,6 +135,14 @@ class CartService
         });
     }
 
+    /**
+     * @return array{cart: Cart}
+     */
+    public function incrementItem(string $deviceId, int $itemId): array
+    {
+        return $this->addItem($deviceId, $itemId, 1);
+    }
+
     public function getActiveCart(string $deviceId, int $tenantId): ?Cart
     {
         return $this->cartRepository->findActiveByDeviceAndTenant($deviceId, $tenantId);
@@ -316,6 +324,49 @@ class CartService
         }
 
         return $this->showCart($deviceId);
+    }
+
+    /**
+     * @return array{cart: Cart}
+     */
+    public function decrementItem(string $deviceId, int $itemId): array
+    {
+        $item = Item::query()
+            ->select(['id', 'tenant_id'])
+            ->whereKey($itemId)
+            ->first();
+
+        if ($item === null) {
+            $this->fail([
+                'success' => false,
+                'message' => 'Item not available for ordering.',
+                'data' => [],
+                'meta' => (object) [],
+            ], 404);
+        }
+
+        return DB::transaction(function () use ($deviceId, $item): array {
+            $cart = $this->cartRepository->findActiveByDeviceAndTenantForUpdate($deviceId, (int) $item->tenant_id);
+
+            if ($cart === null) {
+                return ['cart' => $this->getOrCreateCart($deviceId, (int) $item->tenant_id)];
+            }
+
+            $cartItem = $this->cartRepository->findCartItemForUpdate((int) $cart->id, (int) $item->id);
+
+            if ($cartItem === null) {
+                return ['cart' => $cart->fresh(['tenant', 'items.item.activePrice', 'items.item.primaryImage'])];
+            }
+
+            if ((int) $cartItem->quantity > 1) {
+                $cartItem->quantity = (int) $cartItem->quantity - 1;
+                $cartItem->save();
+            } else {
+                $cartItem->delete();
+            }
+
+            return ['cart' => $cart->fresh(['tenant', 'items.item.activePrice', 'items.item.primaryImage'])];
+        });
     }
 
     public function clear(string $deviceId): void

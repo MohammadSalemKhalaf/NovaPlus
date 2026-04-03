@@ -61,6 +61,48 @@ class CartController extends Controller
         ]);
     }
 
+    public function incrementItem(Request $request): JsonResponse
+    {
+        $request->validate([
+            'item_id' => ['required', 'integer', 'exists:items,id'],
+        ]);
+
+        $deviceId = $this->getDeviceIdOrFail($request);
+        $itemId = (int) $request->input('item_id');
+
+        $result = $this->cartService->incrementItem($deviceId, $itemId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Item quantity increased successfully.',
+            'data' => [
+                'cart' => $this->formatCart($result['cart']),
+            ],
+            'meta' => (object) [],
+        ]);
+    }
+
+    public function decrementItem(Request $request): JsonResponse
+    {
+        $request->validate([
+            'item_id' => ['required', 'integer', 'exists:items,id'],
+        ]);
+
+        $deviceId = $this->getDeviceIdOrFail($request);
+        $itemId = (int) $request->input('item_id');
+
+        $result = $this->cartService->decrementItem($deviceId, $itemId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Item quantity decreased successfully.',
+            'data' => [
+                'cart' => $this->formatCart($result['cart']),
+            ],
+            'meta' => (object) [],
+        ]);
+    }
+
     public function checkoutWhatsApp(CartCheckoutWhatsAppRequest $request): JsonResponse
     {
         $deviceId = $this->getDeviceIdOrFail($request);

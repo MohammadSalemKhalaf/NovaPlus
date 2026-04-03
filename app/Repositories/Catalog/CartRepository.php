@@ -192,6 +192,18 @@ class CartRepository
             ->first();
     }
 
+    public function findActiveByDeviceAndTenantForUpdate(string $deviceId, int $tenantId): ?Cart
+    {
+        return Cart::query()
+            ->where('device_id', $deviceId)
+            ->where('tenant_id', $tenantId)
+            ->where('status', 'active')
+            ->with($this->cartRelations())
+            ->lockForUpdate()
+            ->orderByDesc('id')
+            ->first();
+    }
+
     public function deleteItemFromCart(int $cartId, string $deviceId, int $itemId): void
     {
         CartItem::query()
