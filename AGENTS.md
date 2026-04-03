@@ -1,5 +1,56 @@
 # AGENTS.md
 
+## 0. Agent Bootstrap (MANDATORY EXECUTION FLOW)
+
+Before performing ANY task, the agent MUST execute the following sequence:
+
+### Step 1: Load Core Memory
+- Read AGENTS.md بالكامل كـ source of truth
+- فهم architecture + rules + constraints
+
+### Step 2: Load Project Rules
+Agent MUST read ALL files inside:
+
+`project-docs/project-rules/`
+
+Including:
+- AI_RULES.md
+- IMPLEMENTATION_RULES.md
+- API_TESTING_RULES.md
+- PROMPT_TEMPLATE.md
+
+These files are NOT optional.
+They are considered EXTENSIONS of AGENTS.md.
+
+### Step 3: Merge Context
+Agent MUST:
+- combine AGENTS.md + project-rules
+- treat them as one unified rule system
+
+### Step 4: Execution
+Only after reading ALL rules:
+
+Agent can:
+- implement code
+- modify code
+- create endpoints
+- update Postman
+
+### Strict Enforcement
+If agent does NOT read project rules:
+
+- Implementation is INVALID ❌
+- Task is considered FAILED ❌
+
+### Output Behavior
+Before starting any implementation, agent MUST internally confirm:
+
+"AGENT MEMORY LOADED ✅"
+
+### Final Rule
+This bootstrap step is MANDATORY for every task.
+It cannot be skipped under any condition.
+
 ## 1. Project Identity
 
 **Project Name:** AI Commerce Platform  
@@ -300,6 +351,11 @@ Public pages and QR routes must:
 - never expose storage internals
 - be rate-limited and abuse-aware where relevant
 
+### 9.5 Tenant Scope and Sensitive Data Safety
+- NEVER expose sensitive data in API responses, logs, or debug payloads.
+- ALWAYS scope data access by `tenant_id` at query level.
+- NEVER trust frontend-supplied `tenant_id`; tenant context must be resolved from authenticated membership/session and enforced server-side.
+
 ---
 
 ## 10. Performance Rules
@@ -325,6 +381,45 @@ Design catalog retrieval to support:
 - fast public browsing
 - structured filtering
 - incremental expansion later
+
+### 10.4 Query Performance Engineering (Mandatory)
+- NO collection filtering for production endpoints when database filtering is possible.
+- ALWAYS perform filtering, sorting, and aggregation at DB level.
+- ALWAYS use explicit `select()` with required columns only; never rely on `select *` in application queries.
+- MUST prevent N+1 queries by design and review.
+- MUST use eager loading when related data is required, while limiting selected relation columns.
+
+### 10.5 Query Optimization Rules
+- NEVER fetch full tables for request/response flows.
+- ALWAYS paginate list endpoints.
+- ALWAYS limit columns for lists and summaries.
+- NEVER execute database calls inside loops when a set-based query can solve it.
+
+### 10.6 Indexing Strategy (Critical)
+- Agents and contributors MUST analyze every new or modified query path.
+- If a query contains `WHERE`, `JOIN`, or `ORDER BY`, index evaluation is mandatory.
+- Add indexes when needed for filtering, join, and sorting paths.
+- Common index candidates that must be evaluated early include: `tenant_id`, `device_id`, `item_id`, `category_id`.
+- Indexing decisions must consider read/write trade-offs and expected tenant scale.
+
+### 10.7 Response Optimization
+- DTO/resource mapping is REQUIRED for API responses.
+- NO heavy payloads for list endpoints.
+- DO NOT include unnecessary relations.
+- Prefer lightweight list responses and provide detail endpoints for expanded data.
+
+### 10.8 Cache Strategy (Light)
+Cache is allowed only where correctness is preserved and invalidation is explicit.
+
+Initial read-heavy targets:
+- public catalog
+- public stores
+
+Rules:
+- Use Redis when available.
+- Define deterministic cache keys including tenant/public scope.
+- Define explicit TTL per endpoint/use case.
+- Invalidate relevant cache entries on create/update/delete or publication-state changes.
 
 ---
 
@@ -400,6 +495,19 @@ Prefer:
 - event hooks for important lifecycle steps
 - DTO/resource patterns where useful
 - versioned public APIs if exposure grows
+
+### 13.4 Validation Discipline
+- ALWAYS use FormRequest validation for HTTP write operations and complex filters.
+- NEVER trust raw input without explicit validation and normalization.
+- Validation must include tenant ownership checks for entity references.
+
+### 13.5 Agent Behavior Upgrade
+Agent and contributor behavior must remain production-first:
+- think production-first for every implementation decision
+- do not write naive queries
+- do not over-engineer beyond Phase 1 scope
+- do not break working features while optimizing
+- optimize from first implementation, not as an afterthought
 
 ---
 
@@ -506,6 +614,15 @@ Current documentation priority order:
 5. DATABASE_DESIGN_PHASE_1.md
 6. API_CONTRACTS_PHASE_1.md
 
+### 19.1 Postman Enforcement (Strict)
+- EVERY endpoint MUST be added to Postman.
+- Each endpoint entry MUST include:
+	- request example
+	- response example
+- Endpoint updates must be reflected in Postman in the same delivery cycle.
+- Final implementation output MUST include: `Postman Updated ✅`.
+- If Postman is not updated for endpoint changes, the task is considered FAILED.
+
 ---
 
 ## 20. Definition of Done
@@ -520,6 +637,13 @@ No feature is complete unless it includes, where relevant:
 - documentation update
 - UI completion if applicable
 - operational readiness considerations
+
+Definition of Done upgrade requirements (mandatory for delivery acceptance):
+- no errors
+- routes registered
+- Postman updated
+- performance considered
+- indexing considered
 
 ---
 
