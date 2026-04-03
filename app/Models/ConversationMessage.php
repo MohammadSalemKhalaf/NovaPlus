@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ConversationMessage extends Model
 {
@@ -27,7 +28,7 @@ class ConversationMessage extends Model
             'conversation_id' => 'integer',
             'sender_id' => 'integer',
             'reply_to_message_id' => 'integer',
-            'metadata' => 'json',
+            'metadata' => 'array',
             'is_read' => 'boolean',
             'read_at' => 'datetime',
         ];
@@ -46,5 +47,10 @@ class ConversationMessage extends Model
     public function replyTo(): BelongsTo
     {
         return $this->belongsTo(ConversationMessage::class, 'reply_to_message_id');
+    }
+
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(MessageReaction::class, 'message_id');
     }
 }

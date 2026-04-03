@@ -5429,6 +5429,7 @@
                   "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
                   "const json = pm.response.json();",
                   "pm.test('sender type is end_user', function () { pm.expect(json.data.message.sender_type).to.eql('end_user'); });"
+                  ,"pm.environment.set('message_id', String(json.data.message.id));"
                 ]
               }
             }
@@ -5755,7 +5756,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"product_id\": 1,\n  \"product_name\": \"Premium Widget\",\n  \"product_price\": 49.99,\n  \"product_image\": \"https://example.com/widget.jpg\"\n}",
+              "raw": "{\n  \"tenant_id\": {{tenant_id}},\n  \"product_id\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5783,9 +5784,64 @@
                   "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
                   "const json = pm.response.json();",
                   "pm.test('message type is product', function () { pm.expect(json.data.message.message_type).to.eql('product'); });",
-                  "pm.test('metadata exists', function () { pm.expect(json.data.message.metadata).to.exist; });",
-                  "pm.test('product_id in metadata', function () { pm.expect(json.data.message.metadata.product_id).to.eql(1); });",
-                  "pm.test('product_price in metadata', function () { pm.expect(json.data.message.metadata.price).to.eql(49.99); });"
+                  "pm.test('metadata type is product', function () { pm.expect(json.data.message.metadata.type).to.eql('product'); });",
+                  "pm.test('metadata payload contains product_id', function () { pm.expect(json.data.message.metadata.payload.product_id).to.eql(1); });",
+                  "pm.test('order draft exists', function () { pm.expect(json.data.order_draft).to.exist; });",
+                  "pm.environment.set('conversation_id', String(json.data.conversation.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "EndUser - Send Intent Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{enduser_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenant_id\": {{tenant_id}},\n  \"intent_type\": \"order_request\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/enduser/messages/intent",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "enduser",
+                "messages",
+                "intent"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.test('metadata type is intent', function () { pm.expect(json.data.message.metadata.type).to.eql('intent'); });",
+                  "pm.test('intent_type is order_request', function () { pm.expect(json.data.message.metadata.payload.intent_type).to.eql('order_request'); });"
                 ]
               }
             }
@@ -5950,6 +6006,112 @@
           ]
         },
         {
+          "name": "Message Reaction - Add Like",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{enduser_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reaction\": \"like\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/messages/{{message_id}}/react",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages",
+                "{{message_id}}",
+                "react"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.test('reaction_type is like', function () { pm.expect(json.data.reaction_type).to.eql('like'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Message Reaction - Update to Love",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{enduser_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reaction\": \"love\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/messages/{{message_id}}/react",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages",
+                "{{message_id}}",
+                "react"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.test('reaction_type is love', function () { pm.expect(json.data.reaction_type).to.eql('love'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Conversation - List Messages with Rich Content",
           "request": {
             "method": "GET",
@@ -5989,8 +6151,49 @@
                 "exec": [
                   "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
-                  "pm.test('Data is paginated', function () { pm.expect(json.data).to.be.an('object'); });",
-                  "pm.test('Contains message types text, image, voice, product', function () { pm.expect(json.data).to.exist; });"
+                  "pm.test('Messages array exists', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "pm.test('First message has reactions_count', function () { pm.expect(json.data[0]).to.have.property('reactions_count'); });",
+                  "pm.test('First message has user_reaction', function () { pm.expect(json.data[0]).to.have.property('user_reaction'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Message Reaction - Remove",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{enduser_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/messages/{{message_id}}/react",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages",
+                "{{message_id}}",
+                "react"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('removed_count exists', function () { pm.expect(json.data.removed_count).to.be.a('number'); });"
                 ]
               }
             }

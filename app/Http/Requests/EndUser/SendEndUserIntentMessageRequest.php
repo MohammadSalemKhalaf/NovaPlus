@@ -3,9 +3,8 @@
 namespace App\Http\Requests\EndUser;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-class SendEndUserMediaMessageRequest extends FormRequest
+class SendEndUserIntentMessageRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,9 +14,8 @@ class SendEndUserMediaMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'conversation_id' => ['required', 'integer', 'min:1', 'exists:conversations,id'],
-            'media_url' => ['required', 'string', 'max:2048', 'url'],
-            'media_type' => ['required', 'string', Rule::in(['image', 'voice'])],
+            'tenant_id' => ['required', 'integer', 'min:1', 'exists:tenants,id'],
+            'intent_type' => ['required', 'string', 'in:order_request'],
             'reply_to_message_id' => ['nullable', 'integer', 'min:1', 'exists:conversation_messages,id'],
         ];
     }

@@ -7,17 +7,24 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class ConversationRepository
 {
-    public function startOrCreate(int $tenantId, int $endUserId): Conversation
+    public function startOrCreate(int $tenantId, int $endUserId, string $contextType = 'general'): Conversation
     {
-        return Conversation::query()->firstOrCreate(
+        $conversation = Conversation::query()->firstOrCreate(
             [
                 'tenant_id' => $tenantId,
                 'end_user_id' => $endUserId,
             ],
             [
                 'status' => 'active',
+                'context_type' => $contextType,
             ]
         );
+
+        if ($contextType === 'product' && $conversation->context_type !== 'product') {
+            $conversation->forceFill(['context_type' => $contextType])->save();
+        }
+
+        return $conversation;
     }
 
     public function findForEndUser(int $conversationId, int $endUserId): ?Conversation
@@ -30,6 +37,7 @@ class ConversationRepository
                 'tenant_id',
                 'end_user_id',
                 'status',
+                'context_type',
                 'last_message_at',
                 'last_message_preview',
                 'created_at',
@@ -59,6 +67,7 @@ class ConversationRepository
                 'conversations.tenant_id',
                 'conversations.end_user_id',
                 'conversations.status',
+                'conversations.context_type',
                 'conversations.last_message_at',
                 'conversations.last_message_preview',
                 'conversations.created_at',
@@ -89,6 +98,7 @@ class ConversationRepository
                 'tenant_id',
                 'end_user_id',
                 'status',
+                'context_type',
                 'last_message_at',
                 'last_message_preview',
                 'created_at',
@@ -106,6 +116,7 @@ class ConversationRepository
                 'tenant_id',
                 'end_user_id',
                 'status',
+                'context_type',
                 'last_message_at',
                 'last_message_preview',
                 'created_at',

@@ -14,6 +14,13 @@ class ConversationMessageResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $reactions = $this->reactions ?? collect();
+        $userReaction = null;
+
+        if ($request->user('sanctum')) {
+            $userReaction = $reactions->firstWhere('user_id', (int) $request->user('sanctum')->id);
+        }
+
         return [
             'id' => (int) $this->id,
             'conversation_id' => (int) $this->conversation_id,
@@ -28,6 +35,8 @@ class ConversationMessageResource extends JsonResource
             'media_type' => $this->media_type,
             'metadata' => $this->metadata,
             'reply_to_message_id' => $this->reply_to_message_id,
+            'reactions_count' => $reactions->count(),
+            'user_reaction' => $userReaction ? (string) $userReaction->reaction_type : null,
             'is_read' => (bool) $this->is_read,
             'read_at' => $this->read_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),

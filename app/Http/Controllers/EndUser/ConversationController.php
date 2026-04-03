@@ -29,6 +29,7 @@ class ConversationController extends Controller
                     'tenant_id' => (int) $conversation->tenant_id,
                     'end_user_id' => (int) $conversation->end_user_id,
                     'status' => (string) $conversation->status,
+                    'context_type' => (string) $conversation->context_type,
                     'last_message_at' => $conversation->last_message_at?->toIso8601String(),
                     'last_message_preview' => $conversation->last_message_preview,
                     'created_at' => $conversation->created_at?->toIso8601String(),

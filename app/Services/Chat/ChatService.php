@@ -4,10 +4,14 @@ namespace App\Services\Chat;
 
 use App\Models\Conversation;
 use App\Models\ConversationMessage;
+use App\Models\Item;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Repositories\Catalog\ItemRepository;
 use App\Repositories\Chat\ConversationMessageRepository;
+use App\Repositories\Chat\ConversationOrderDraftRepository;
 use App\Repositories\Chat\ConversationRepository;
+use App\Repositories\Chat\MessageReactionRepository;
 use App\Services\Notifications\NotificationPayloadBuilder;
 use App\Services\Notifications\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -16,17 +20,25 @@ use Illuminate\Support\Str;
 
 class ChatService
 {
+    private const ALLOWED_MEDIA_TYPES = ['image', 'voice'];
+    private const ALLOWED_REACTIONS = ['like', 'love', 'laugh', 'fire'];
+    private const ALLOWED_MESSAGE_TYPES = ['text', 'image', 'voice', 'product'];
+    private const METADATA_MAX_BYTES = 2048;
+
     public function __construct(
         private readonly ConversationRepository $conversationRepository,
         private readonly ConversationMessageRepository $conversationMessageRepository,
+        private readonly ConversationOrderDraftRepository $orderDraftRepository,
+        private readonly MessageReactionRepository $messageReactionRepository,
+        private readonly ItemRepository $itemRepository,
         private readonly NotificationService $notificationService,
         private readonly NotificationPayloadBuilder $notificationPayloadBuilder,
     ) {
     }
 
-    public function startOrGetConversation(User $endUser, int $tenantId): Conversation
+    public function startOrGetConversation(User $endUser, int $tenantId, string $contextType = 'general'): Conversation
     {
-        $conversation = $this->conversationRepository->startOrCreate($tenantId, (int) $endUser->id);
+        $conversation = $this->conversationRepository->startOrCreate($tenantId, (int) $endUser->id, $contextType);
 
         return $conversation->loadMissing([
             'tenant:id,name,slug',
@@ -42,11 +54,8 @@ class ChatService
             return null;
         }
 
-        // Validate reply (if provided)
-        if ($replyToMessageId !== null) {
-            if (!$this->validateReplyBelongsToConversation((int) $conversation->id, $replyToMessageId)) {
-                return null;
-            }
+        if ($replyToMessageId !== null && !$this->validateReplyBelongsToConversation((int) $conversation->id, $replyToMessageId)) {
+            return null;
         }
 
         $message = $this->persistMessage(
@@ -68,7 +77,7 @@ class ChatService
 
     public function sendEndUserMediaMessage(User $endUser, int $conversationId, string $mediaUrl, string $mediaType, ?int $replyToMessageId = null): ?array
     {
-        if (!in_array($mediaType, ['image', 'voice'])) {
+        if (!in_array($mediaType, self::ALLOWED_MEDIA_TYPES, true)) {
             return null;
         }
 
@@ -78,11 +87,8 @@ class ChatService
             return null;
         }
 
-        // Validate reply
-        if ($replyToMessageId !== null) {
-            if (!$this->validateReplyBelongsToConversation((int) $conversation->id, $replyToMessageId)) {
-                return null;
-            }
+        if ($replyToMessageId !== null && !$this->validateReplyBelongsToConversation((int) $conversation->id, $replyToMessageId)) {
+            return null;
         }
 
         $message = $this->persistMessage(
@@ -90,9 +96,7 @@ class ChatService
             senderType: 'end_user',
             senderId: (int) $endUser->id,
             messageType: $mediaType,
-            body: "{$mediaType} message",
-            mediaUrl: $mediaUrl,
-            mediaType: $mediaType,
+            body: 'media message',
             replyToMessageId: $replyToMessageId,
         );
 
@@ -104,36 +108,65 @@ class ChatService
         ];
     }
 
-    public function sendEndUserProductMessage(User $endUser, int $conversationId, int $productId, string $productName, float $productPrice, string $productImage, ?int $replyToMessageId = null): ?array
+    public function sendEndUserProductMessage(User $endUser, ?int $tenantId, ?int $conversationId, int $productId, ?int $replyToMessageId = null): ?array
     {
-        $conversation = $this->conversationRepository->findForEndUser($conversationId, (int) $endUser->id);
+        $conversation = null;
+        $item = null;
+        $effectiveTenantId = $tenantId;
 
-        if ($conversation === null) {
+        if ($conversationId !== null) {
+            $conversation = $this->conversationRepository->findForEndUser($conversationId, (int) $endUser->id);
+
+            if ($conversation === null) {
+                return null;
+            }
+
+            $effectiveTenantId = (int) $conversation->tenant_id;
+        }
+
+        if ($effectiveTenantId === null || $effectiveTenantId <= 0) {
             return null;
         }
 
-        // Validate reply
-        if ($replyToMessageId !== null) {
-            if (!$this->validateReplyBelongsToConversation((int) $conversation->id, $replyToMessageId)) {
-                return null;
-            }
+        $item = $this->itemRepository->findForTenant($effectiveTenantId, $productId);
+
+        if ($item === null) {
+            return null;
         }
 
-        $metadata = [
-            'product_id' => (int) $productId,
-            'name' => (string) $productName,
-            'price' => (float) $productPrice,
-            'image' => (string) $productImage,
-        ];
+        if ($conversation === null) {
+            $conversation = $this->startOrGetConversation($endUser, $effectiveTenantId, 'product');
+        } elseif ($conversation->context_type !== 'product') {
+            $conversation->forceFill(['context_type' => 'product'])->save();
+        }
+
+        if ($replyToMessageId !== null && !$this->validateReplyBelongsToConversation((int) $conversation->id, $replyToMessageId)) {
+            return null;
+        }
+
+        $metadata = $this->buildProductMetadata($item);
 
         $message = $this->persistMessage(
             conversationId: (int) $conversation->id,
             senderType: 'end_user',
             senderId: (int) $endUser->id,
             messageType: 'product',
-            body: "Product: {$productName}",
+            body: 'product inquiry',
             metadata: $metadata,
             replyToMessageId: $replyToMessageId,
+        );
+
+        $draft = $this->orderDraftRepository->create(
+            (int) $conversation->id,
+            (int) $conversation->tenant_id,
+            (int) $endUser->id,
+            [[
+                'product_id' => (int) $item->id,
+                'name' => (string) $item->name,
+                'price' => (float) ($item->final_price ?? 0),
+                'image' => $this->resolveItemImage($item),
+                'quantity' => 1,
+            ]]
         );
 
         $this->broadcastMessageToOwner($conversation, $endUser);
@@ -141,6 +174,64 @@ class ChatService
         return [
             'conversation' => $conversation,
             'message' => $message,
+            'order_draft' => [
+                'draft_id' => (int) $draft->id,
+                'conversation_id' => (int) $draft->conversation_id,
+                'tenant_id' => (int) $draft->tenant_id,
+                'end_user_id' => (int) $draft->end_user_id,
+                'items' => $draft->items,
+                'status' => (string) $draft->status,
+                'created_at' => $draft->created_at?->toIso8601String(),
+            ],
+        ];
+    }
+
+    public function sendEndUserIntentMessage(User $endUser, int $tenantId, string $intentType, ?int $replyToMessageId = null): ?array
+    {
+        if ($intentType !== 'order_request') {
+            return null;
+        }
+
+        $conversation = $this->startOrGetConversation($endUser, $tenantId, 'general');
+
+        if ($replyToMessageId !== null && !$this->validateReplyBelongsToConversation((int) $conversation->id, $replyToMessageId)) {
+            return null;
+        }
+
+        $metadata = $this->buildIntentMetadata($intentType);
+
+        $message = $this->persistMessage(
+            conversationId: (int) $conversation->id,
+            senderType: 'end_user',
+            senderId: (int) $endUser->id,
+            messageType: 'text',
+            body: 'intent request',
+            metadata: $metadata,
+            replyToMessageId: $replyToMessageId,
+        );
+
+        $draft = $this->orderDraftRepository->create(
+            (int) $conversation->id,
+            (int) $conversation->tenant_id,
+            (int) $endUser->id,
+            [],
+            'intent'
+        );
+
+        $this->broadcastMessageToOwner($conversation, $endUser);
+
+        return [
+            'conversation' => $conversation,
+            'message' => $message,
+            'order_draft' => [
+                'draft_id' => (int) $draft->id,
+                'conversation_id' => (int) $draft->conversation_id,
+                'tenant_id' => (int) $draft->tenant_id,
+                'end_user_id' => (int) $draft->end_user_id,
+                'items' => $draft->items,
+                'status' => (string) $draft->status,
+                'created_at' => $draft->created_at?->toIso8601String(),
+            ],
         ];
     }
 
@@ -152,11 +243,8 @@ class ChatService
             return null;
         }
 
-        // Validate reply
-        if ($replyToMessageId !== null) {
-            if (!$this->validateReplyBelongsToConversation((int) $conversation->id, $replyToMessageId)) {
-                return null;
-            }
+        if ($replyToMessageId !== null && !$this->validateReplyBelongsToConversation((int) $conversation->id, $replyToMessageId)) {
+            return null;
         }
 
         $message = $this->persistMessage(
@@ -211,6 +299,56 @@ class ChatService
         return $this->conversationMessageRepository->markEndUserMessagesAsReadForOwner((int) $conversation->id);
     }
 
+    public function addReaction(User $actor, int $messageId, string $reactionType): ?array
+    {
+        if (!in_array($reactionType, self::ALLOWED_REACTIONS, true)) {
+            return null;
+        }
+
+        $message = $this->resolveMessageForActor($actor, $messageId);
+
+        if ($message === null) {
+            return null;
+        }
+
+        $reaction = $this->messageReactionRepository->create((int) $message->id, (int) $actor->id, $reactionType);
+
+        return [
+            'reaction_id' => (int) $reaction->id,
+            'message_id' => (int) $reaction->message_id,
+            'user_id' => (int) $reaction->user_id,
+            'reaction_type' => (string) $reaction->reaction_type,
+            'created_at' => $reaction->created_at?->toIso8601String(),
+        ];
+    }
+
+    public function removeReaction(User $actor, int $messageId): ?int
+    {
+        $message = $this->resolveMessageForActor($actor, $messageId);
+
+        if ($message === null) {
+            return null;
+        }
+
+        return $this->messageReactionRepository->remove((int) $message->id, (int) $actor->id);
+    }
+
+    public function getMessageReactions(int $messageId): array
+    {
+        $reactions = $this->messageReactionRepository->getByMessage($messageId);
+
+        return [
+            'reactions' => $reactions->map(static fn ($reaction): array => [
+                'id' => (int) $reaction->id,
+                'message_id' => (int) $reaction->message_id,
+                'user_id' => (int) $reaction->user_id,
+                'reaction_type' => (string) $reaction->reaction_type,
+                'created_at' => $reaction->created_at?->toIso8601String(),
+            ])->toArray(),
+            'counts' => $this->messageReactionRepository->getCountByMessage($messageId),
+        ];
+    }
+
     private function validateReplyBelongsToConversation(int $conversationId, int $replyToMessageId): bool
     {
         return ConversationMessage::query()
@@ -230,6 +368,68 @@ class ChatService
         return $this->conversationRepository->findForOwner($conversationId, (int) $actor->id);
     }
 
+    private function resolveMessageForActor(User $actor, int $messageId): ?ConversationMessage
+    {
+        $message = $this->conversationMessageRepository->findForEndUser($messageId, (int) $actor->id);
+
+        if ($message !== null) {
+            return $message;
+        }
+
+        return $this->conversationMessageRepository->findForOwner($messageId, (int) $actor->id);
+    }
+
+    private function buildProductMetadata(Item $item): array
+    {
+        $payload = [
+            'product_id' => (int) $item->id,
+            'name' => (string) $item->name,
+            'price' => (float) ($item->final_price ?? 0),
+            'image' => $this->resolveItemImage($item),
+        ];
+
+        return $this->buildStructuredMetadata('product', $payload);
+    }
+
+    private function buildIntentMetadata(string $intentType): array
+    {
+        return $this->buildStructuredMetadata('intent', [
+            'intent_type' => $intentType,
+        ]);
+    }
+
+    private function buildStructuredMetadata(string $type, array $payload): array
+    {
+        $metadata = [
+            'type' => $type,
+            'payload' => $payload,
+        ];
+
+        $this->assertStructuredMetadata($metadata);
+
+        return $metadata;
+    }
+
+    private function assertStructuredMetadata(array $metadata): void
+    {
+        if (!isset($metadata['type'], $metadata['payload']) || !is_string($metadata['type']) || !is_array($metadata['payload'])) {
+            throw new \InvalidArgumentException('Metadata must follow {type, payload} structure.');
+        }
+
+        $encoded = json_encode($metadata, JSON_THROW_ON_ERROR);
+
+        if ($encoded === false || strlen($encoded) > self::METADATA_MAX_BYTES) {
+            throw new \InvalidArgumentException('Metadata exceeds allowed size.');
+        }
+    }
+
+    private function resolveItemImage(Item $item): string
+    {
+        $primaryImage = $item->relationLoaded('primaryImage') ? $item->getRelation('primaryImage') : $item->primaryImage()->first();
+
+        return (string) ($primaryImage?->storage_path ?? '');
+    }
+
     private function persistMessage(
         int $conversationId,
         string $senderType,
@@ -241,6 +441,14 @@ class ChatService
         ?array $metadata = null,
         ?int $replyToMessageId = null,
     ): array {
+        if (!in_array($messageType, self::ALLOWED_MESSAGE_TYPES, true)) {
+            throw new \InvalidArgumentException('Invalid message type.');
+        }
+
+        if ($metadata !== null) {
+            $this->assertStructuredMetadata($metadata);
+        }
+
         return DB::transaction(function () use ($conversationId, $senderType, $senderId, $messageType, $body, $mediaUrl, $mediaType, $metadata, $replyToMessageId): array {
             $messageData = [
                 'conversation_id' => $conversationId,
@@ -268,8 +476,6 @@ class ChatService
             }
 
             $message = $this->conversationMessageRepository->create($messageData);
-
-            // Generate preview: truncate to 100 chars (fixed from 140)
             $preview = Str::limit(trim($body), 100);
             $this->conversationRepository->touchLastMessage($conversationId, $preview);
 

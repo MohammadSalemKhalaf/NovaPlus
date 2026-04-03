@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\TenantUserController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\ConversationMessageController;
+use App\Http\Controllers\MessageReactionController;
 use App\Http\Controllers\EndUser\ConversationController as EndUserConversationController;
 use App\Http\Controllers\Owner\CategoryController as OwnerCategoryController;
 use App\Http\Controllers\Owner\ConversationController as OwnerConversationController;
@@ -260,6 +261,7 @@ Route::prefix('v1/enduser')->group(function (): void {
         Route::post('messages', [EndUserMessageController::class, 'store']);
         Route::post('messages/media', [EndUserMessageController::class, 'storeMedia']);
         Route::post('messages/product', [EndUserMessageController::class, 'storeProduct']);
+        Route::post('messages/intent', [EndUserMessageController::class, 'storeIntent']);
     });
 });
 
@@ -268,6 +270,13 @@ Route::prefix('v1/conversations')
     ->group(function (): void {
         Route::get('{id}/messages', [ConversationMessageController::class, 'index'])->whereNumber('id');
         Route::post('{id}/read', [ConversationMessageController::class, 'markAsRead'])->whereNumber('id');
+    });
+
+Route::prefix('v1/messages')
+    ->middleware('auth:sanctum')
+    ->group(function (): void {
+        Route::post('{id}/react', [MessageReactionController::class, 'store'])->whereNumber('id');
+        Route::delete('{id}/react', [MessageReactionController::class, 'destroy'])->whereNumber('id');
     });
 
 Route::prefix('v1/sales-agent')
