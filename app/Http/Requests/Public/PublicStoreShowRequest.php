@@ -8,6 +8,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class PublicStoreShowRequest extends FormRequest
 {
+
     public function authorize(): bool
     {
         return true;
