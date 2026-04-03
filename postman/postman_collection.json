@@ -3220,6 +3220,169 @@
       ]
     },
     {
+      "name": "Owner Offers",
+      "item": [
+        {
+          "name": "Create Offer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}"
+              },
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenant_id}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Weekend Special\",\n  \"description\": \"Limited time discount\",\n  \"discount_type\": \"percentage\",\n  \"discount_value\": 20,\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/owner/offers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "owner",
+                "offers"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('Offer payload exists', function () { pm.expect(json.data.offer).to.exist; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Offer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}"
+              },
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenant_id}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Weekend Special Updated\",\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/owner/offers/{{offer_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "owner",
+                "offers",
+                "{{offer_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Offer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}"
+              },
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenant_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/owner/offers/{{offer_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "owner",
+                "offers",
+                "{{offer_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Deleted true', function () { pm.expect(json.data.deleted).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Public Stores",
       "item": [
         {
@@ -4609,6 +4772,138 @@
                       "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
                       "var json = pm.response.json();",
                       "pm.test('Cart payload exists', function () { pm.expect(json.data.cart).to.be.an('object'); });"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Notifications",
+          "item": [
+            {
+              "name": "List Notifications",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/enduser/notifications?per_page=15",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "notifications"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "15"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
+                      "pm.test('Data is array', function () { pm.expect(json.data).to.be.an('array'); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Mark Notification Read",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/enduser/notifications/{{notification_id}}/read",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "notifications",
+                    "{{notification_id}}",
+                    "read"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('is_read true', function () { pm.expect(json.data.is_read).to.eql(true); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Read All Notifications",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{enduser_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/enduser/notifications/read-all",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "enduser",
+                    "notifications",
+                    "read-all"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });"
                     ]
                   }
                 }

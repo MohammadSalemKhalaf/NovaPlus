@@ -4,12 +4,16 @@ namespace App\Services\Admin;
 
 use App\Models\Item;
 use App\Repositories\Catalog\ItemRepository;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ItemService
 {
-    public function __construct(private readonly ItemRepository $itemRepository)
+    public function __construct(
+        private readonly ItemRepository $itemRepository,
+        private readonly NotificationService $notificationService,
+    )
     {
     }
 
@@ -31,7 +35,13 @@ class ItemService
      */
     public function createForTenant(array $validatedData, int $tenantId, ?int $userId = null): Item
     {
-        return $this->itemRepository->createForTenant($validatedData, $tenantId, $userId);
+        $item = $this->itemRepository->createForTenant($validatedData, $tenantId, $userId);
+
+        if ($item->status === 'active' && $item->visibility === 'public') {
+            $this->notificationService->notifyStoreFollowersForItemPublished($item, $userId);
+        }
+
+        return $item;
     }
 
     /**

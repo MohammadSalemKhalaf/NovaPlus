@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Owner\CategoryController as OwnerCategoryController;
 use App\Http\Controllers\Owner\ItemController as OwnerItemController;
+use App\Http\Controllers\Owner\OfferController as OwnerOfferController;
 use App\Http\Controllers\Owner\ProfileController as OwnerProfileController;
 use App\Http\Controllers\Public\BusinessTypeController;
 use App\Http\Controllers\Public\CartController;
@@ -30,6 +31,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EndUser\EndUserAuthController;
 use App\Http\Controllers\EndUser\FavoritesController;
 use App\Http\Controllers\EndUser\GuestCart\GuestCartController;
+use App\Http\Controllers\EndUser\NotificationsController;
 use App\Http\Controllers\EndUser\PreferencesController;
 use App\Http\Controllers\EndUser\RecentlyViewedController;
 
@@ -155,6 +157,13 @@ Route::prefix('v1/owner')
     ->middleware(['auth:sanctum', 'tenant.resolve', 'tenant.access', 'tenant.owner'])
     ->group(function (): void {
         Route::put('profile', [OwnerProfileController::class, 'updateProfile']);
+
+        Route::prefix('offers')->group(function (): void {
+            Route::get('/', [OwnerOfferController::class, 'index']);
+            Route::post('/', [OwnerOfferController::class, 'store']);
+            Route::put('{offer}', [OwnerOfferController::class, 'update'])->whereNumber('offer');
+            Route::delete('{offer}', [OwnerOfferController::class, 'destroy'])->whereNumber('offer');
+        });
     });
 
 Route::prefix('v1/public')->group(function (): void {
@@ -221,6 +230,12 @@ Route::prefix('v1/enduser')->group(function (): void {
         Route::prefix('guest-cart')->group(function (): void {
             Route::post('preview', [GuestCartController::class, 'preview']);
             Route::post('merge', [GuestCartController::class, 'merge']);
+        });
+
+        Route::prefix('notifications')->group(function (): void {
+            Route::get('/', [NotificationsController::class, 'index']);
+            Route::post('{id}/read', [NotificationsController::class, 'markAsRead'])->whereNumber('id');
+            Route::post('read-all', [NotificationsController::class, 'markAllAsRead']);
         });
     });
 });
