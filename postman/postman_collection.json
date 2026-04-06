@@ -68,6 +68,7 @@
               "name": "Me",
               "request": {
                 "method": "GET",
+                "description": "Query Params:\n- status: active|inactive\n- subscription_status: active|expired\n\nExample Response:\n{\n  \"success\": true,\n  \"message\": \"Owners fetched successfully.\",\n  \"data\": {\n    \"owners\": [\n      {\n        \"id\": 24,\n        \"name\": \"Owner One\",\n        \"email\": \"owner1@example.com\",\n        \"store_name\": \"Fresh Market\",\n        \"store_status\": \"active\",\n        \"account_status\": \"active\",\n        \"subscription\": {\n          \"status\": \"expiring\",\n          \"expires_at\": \"2026-05-01T00:00:00.000000Z\",\n          \"days_remaining\": 3\n        }\n      }\n    ]\n  },\n  \"meta\": {\n    \"pagination\": {\n      \"current_page\": 1,\n      \"last_page\": 1,\n      \"per_page\": 15,\n      \"total\": 1\n    }\n  }\n}",
                 "header": [
                   {
                     "key": "Accept",
@@ -2150,13 +2151,23 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{base_url}}/sales-agent/owners",
+                  "raw": "{{base_url}}/sales-agent/owners?status=active&subscription_status=active",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
                     "sales-agent",
                     "owners"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "active"
+                    },
+                    {
+                      "key": "subscription_status",
+                      "value": "active"
+                    }
                   ]
                 }
               },
@@ -2169,7 +2180,25 @@
                       "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
                       "const json = pm.response.json();",
                       "pm.test('Success true', function () { pm.expect(json.success).to.eql(true); });",
-                      "pm.test('Owners array exists', function () { pm.expect(json.data.owners).to.be.an('array'); });"
+                      "pm.test('Owners array exists', function () { pm.expect(json.data.owners).to.be.an('array'); });",
+                      "pm.test('Pagination meta exists', function () { pm.expect(json.meta.pagination).to.be.an('object'); });",
+                      "if (json.data.owners.length > 0) {",
+                      "  const owner = json.data.owners[0];",
+                      "  pm.test('Owner has expected fields', function () {",
+                      "    pm.expect(owner).to.have.property('id');",
+                      "    pm.expect(owner).to.have.property('name');",
+                      "    pm.expect(owner).to.have.property('email');",
+                      "    pm.expect(owner).to.have.property('store_name');",
+                      "    pm.expect(owner).to.have.property('store_status');",
+                      "    pm.expect(owner).to.have.property('account_status');",
+                      "    pm.expect(owner).to.have.property('subscription');",
+                      "  });",
+                      "  pm.test('Subscription shape is valid', function () {",
+                      "    pm.expect(owner.subscription).to.have.property('status');",
+                      "    pm.expect(owner.subscription).to.have.property('expires_at');",
+                      "    pm.expect(owner.subscription).to.have.property('days_remaining');",
+                      "  });",
+                      "}"
                     ]
                   }
                 }
