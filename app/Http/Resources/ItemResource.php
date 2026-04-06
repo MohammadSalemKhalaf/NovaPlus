@@ -61,6 +61,12 @@ class ItemResource extends JsonResource
                     'effective_to' => $this->activePrice->effective_to,
                 ];
             }),
+            'price' => $this->whenLoaded('activePrice', function () {
+                return [
+                    'amount' => $this->activePrice->base_price_amount,
+                    'currency_code' => $this->activePrice->currency_code,
+                ];
+            }),
             'images' => $this->whenLoaded('itemImages', function () {
                 return $this->itemImages->map(function ($image) {
                     return [

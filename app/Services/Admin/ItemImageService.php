@@ -33,10 +33,9 @@ class ItemImageService
     public function uploadImage(int $tenantId, int $itemId, UploadedFile $file, array $validatedData): ItemImage
     {
         $item = $this->resolveItem($tenantId, $itemId);
-        $disk = (string) config('filesystems.default', 'local');
 
-        return DB::transaction(function () use ($tenantId, $itemId, $item, $file, $validatedData, $disk): ItemImage {
-            $path = $file->store("item-images/{$tenantId}/{$itemId}", $disk);
+        return DB::transaction(function () use ($tenantId, $itemId, $item, $file, $validatedData): ItemImage {
+            $path = Storage::disk('public')->putFile("item-images/{$tenantId}/{$itemId}", $file);
 
             $nextSortOrder = array_key_exists('sort_order', $validatedData)
                 ? (int) $validatedData['sort_order']
@@ -124,9 +123,8 @@ class ItemImageService
     public function deleteImage(int $tenantId, int $itemId, int $imageId): void
     {
         $item = $this->resolveItem($tenantId, $itemId);
-        $disk = (string) config('filesystems.default', 'local');
 
-        DB::transaction(function () use ($tenantId, $itemId, $imageId, $item, $disk): void {
+        DB::transaction(function () use ($tenantId, $itemId, $imageId, $item): void {
             $image = ItemImage::query()
                 ->where('tenant_id', $tenantId)
                 ->where('item_id', $itemId)
@@ -171,7 +169,7 @@ class ItemImageService
             }
 
             if (is_string($path) && $path !== '') {
-                Storage::disk($disk)->delete($path);
+                Storage::disk('public')->delete($path);
             }
         });
     }

@@ -20,6 +20,7 @@ class ShowCartRequest extends FormRequest
     {
         return [
             'X-Device-ID' => ['required', 'string', 'max:255'],
+            'X-Tenant-ID' => ['required', 'integer', 'exists:tenants,id'],
         ];
     }
 
@@ -27,6 +28,7 @@ class ShowCartRequest extends FormRequest
     {
         $this->merge([
             'X-Device-ID' => (string) $this->header('X-Device-ID', ''),
+            'X-Tenant-ID' => $this->header('X-Tenant-ID'),
         ]);
     }
 
