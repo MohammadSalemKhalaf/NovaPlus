@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Tenant extends Model
 {
@@ -90,6 +91,11 @@ class Tenant extends Model
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class, 'tenant_id');
+    }
+
+    public function latestSubscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class, 'tenant_id')->latestOfMany('id');
     }
 
     public function categories(): HasMany

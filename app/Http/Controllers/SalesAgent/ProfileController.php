@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\SalesAgent;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SalesAgent\ListOwnersRequest;
 use App\Http\Requests\SalesAgent\RenewSubscriptionRequest;
 use App\Http\Requests\SalesAgent\UpdateProfileRequest;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\SalesAgent\OwnerService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -15,6 +17,10 @@ use Illuminate\Support\Facades\Schema;
 
 class ProfileController extends Controller
 {
+    public function __construct(private readonly OwnerService $ownerService)
+    {
+    }
+
     public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
         $agent = $this->requireSalesAgent($request);
@@ -47,7 +53,7 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function owners(Request $request): JsonResponse
+    public function owners(ListOwnersRequest $request): JsonResponse
     {
         $agent = $this->requireSalesAgent($request);
 
@@ -55,21 +61,17 @@ class ProfileController extends Controller
             return $agent;
         }
 
-        $owners = User::query()
-            ->where($this->ownerCreatorColumn(), $agent->id)
-            ->whereHas('roles', function ($query): void {
-                $query->where('slug', 'store_owner');
-            })
-            ->orderByDesc('created_at')
-            ->get(['id', 'name', 'email', 'status', 'created_at']);
+        $result = $this->ownerService->listBySalesAgent((int) $agent->id, $request->validated());
 
         return response()->json([
             'success' => true,
             'message' => 'Owners fetched successfully.',
             'data' => [
-                'owners' => $owners,
+                'owners' => $result['owners'],
             ],
-            'meta' => (object) [],
+            'meta' => [
+                'pagination' => $result['pagination'],
+            ],
         ]);
     }
 
@@ -339,7 +341,7 @@ class ProfileController extends Controller
 
     private function ownerCreatorColumn(): string
     {
-        return Schema::hasColumn('users', 'created_by_user_id') ? 'created_by_user_id' : 'created_by';
+        return Schema::hasColumn('users', 'created_by') ? 'created_by' : 'created_by_user_id';
     }
 
     private function requireSalesAgent(Request $request): User|JsonResponse
