@@ -30,6 +30,8 @@ class UpdateProfileRequest extends FormRequest
                     }
                 },
             ],
+            'tenant_store_image' => ['nullable', 'string', 'max:2048'],
+            'tenant_store_image_file' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'password' => ['nullable', 'string', 'min:8'],
         ];
     }

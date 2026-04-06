@@ -26,6 +26,12 @@ class OfferResource extends JsonResource
             'created_by' => (int) $this->created_by,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
+            'item_ids' => $this->whenLoaded('items', function () {
+                return $this->items
+                    ->pluck('id')
+                    ->map(static fn ($id) => (int) $id)
+                    ->values();
+            }, []),
         ];
     }
 }

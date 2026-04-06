@@ -15,6 +15,8 @@ class OfferStoreRequest extends FormRequest
 
     public function rules(): array
     {
+        $tenantId = $this->tenantId();
+
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
@@ -24,6 +26,13 @@ class OfferStoreRequest extends FormRequest
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
             'status' => ['required', 'string', 'in:draft,active,archived'],
+            'item_ids' => ['sometimes', 'array'],
+            'item_ids.*' => [
+                'integer',
+                \Illuminate\Validation\Rule::exists('items', 'id')->where(function ($query) use ($tenantId): void {
+                    $query->where('tenant_id', $tenantId);
+                }),
+            ],
         ];
     }
 

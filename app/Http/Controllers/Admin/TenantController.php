@@ -33,6 +33,7 @@ class TenantController extends Controller
                 'currency_code' => $payload['currency_code'],
                 'timezone' => $payload['timezone'],
                 'whatsapp_number' => $payload['whatsapp_number'] ?? null,
+                'store_image' => $payload['store_image'] ?? null,
                 'onboarding_completed_at' => null,
             ]);
 
@@ -84,6 +85,7 @@ class TenantController extends Controller
                     'business_mode' => $tenant->business_mode,
                     'business_type_id' => $tenant->business_type_id,
                     'whatsapp_number' => $tenant->whatsapp_number,
+                    'store_image' => $tenant->store_image,
                     'primary_language' => $tenant->primary_language,
                     'currency_code' => $tenant->currency_code,
                     'timezone' => $tenant->timezone,

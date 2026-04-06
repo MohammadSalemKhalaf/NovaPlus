@@ -5,6 +5,7 @@ namespace App\Repositories\Catalog;
 use App\Models\Item;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -208,12 +209,20 @@ class ItemRepository
 
     public function createForTenant(array $validatedData, int $tenantId, ?int $userId = null): Item
     {
-        return Item::query()->create([
-            ...$validatedData,
+        $offerIds = Arr::get($validatedData, 'offer_ids');
+
+        $item = Item::query()->create([
+            ...Arr::except($validatedData, ['offer_ids']),
             'tenant_id' => $tenantId,
             'created_by_user_id' => $userId,
             'updated_by_user_id' => $userId,
         ]);
+
+        if (Schema::hasTable('offers') && Schema::hasTable('offer_items')) {
+            $item->offers()->sync($this->normalizeOfferIds($offerIds));
+        }
+
+        return $item;
     }
 
     public function findForTenant(int $tenantId, int $itemId): ?Item
@@ -230,11 +239,18 @@ class ItemRepository
             return $item;
         }
 
+        $offerIdsProvided = Arr::has($validatedData, 'offer_ids');
+        $offerIds = Arr::get($validatedData, 'offer_ids');
+
         $item->fill([
-            ...$validatedData,
+            ...Arr::except($validatedData, ['offer_ids']),
             'updated_by_user_id' => $userId,
         ]);
         $item->save();
+
+        if ($offerIdsProvided && Schema::hasTable('offers') && Schema::hasTable('offer_items')) {
+            $item->offers()->sync($this->normalizeOfferIds($offerIds));
+        }
 
         return $item;
     }
@@ -363,5 +379,21 @@ class ItemRepository
             ->where(function ($nested): void {
                 $nested->whereNull('item_prices.effective_to')->orWhere('item_prices.effective_to', '>=', now());
             });
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function normalizeOfferIds(mixed $offerIds): array
+    {
+        if (! is_array($offerIds)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map(static function ($value): int {
+            return (int) $value;
+        }, $offerIds), static function (int $value): bool {
+            return $value > 0;
+        })));
     }
 }

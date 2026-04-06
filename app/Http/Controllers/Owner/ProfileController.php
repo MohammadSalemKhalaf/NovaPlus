@@ -7,7 +7,9 @@ use App\Http\Requests\Owner\UpdateProfileRequest;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
@@ -60,6 +62,22 @@ class ProfileController extends Controller
             $tenant->update(['whatsapp_number' => $validated['tenant_whatsapp_number']]);
         }
 
+        if (array_key_exists('tenant_store_image', $validated)) {
+            $tenant->update(['store_image' => $validated['tenant_store_image']]);
+        }
+
+        /** @var UploadedFile|null $tenantStoreImageFile */
+        $tenantStoreImageFile = $request->file('tenant_store_image_file');
+        if ($tenantStoreImageFile !== null) {
+            $storedPath = $tenantStoreImageFile->store('store_images', 'public');
+
+            if (! empty($tenant->store_image) && str_starts_with($tenant->store_image, 'store_images/')) {
+                Storage::disk('public')->delete($tenant->store_image);
+            }
+
+            $tenant->update(['store_image' => $storedPath]);
+        }
+
         $user = $user->fresh();
         $tenant = $tenant->fresh();
 
@@ -74,7 +92,10 @@ class ProfileController extends Controller
                 ],
                 'tenant' => [
                     'id' => $tenant?->id,
+                    'name' => $tenant?->name,
+                    'slug' => $tenant?->slug,
                     'whatsapp_number' => $tenant?->whatsapp_number,
+                    'store_image' => $tenant?->store_image,
                 ],
             ],
             'meta' => (object) [],

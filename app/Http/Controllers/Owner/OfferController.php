@@ -9,6 +9,7 @@ use App\Http\Resources\OfferResource;
 use App\Services\Admin\OfferService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class OfferController extends Controller
 {
@@ -60,6 +61,9 @@ class OfferController extends Controller
             $tenantId,
             (int) $request->user()->id,
         );
+        if (Schema::hasTable('offer_items')) {
+            $offer->load('items:id');
+        }
 
         return response()->json([
             'success' => true,
@@ -86,6 +90,9 @@ class OfferController extends Controller
         }
 
         $updated = $this->offerService->updateForTenant($record, $request->validated(), $tenantId);
+        if (Schema::hasTable('offer_items')) {
+            $updated->load('items:id');
+        }
 
         return response()->json([
             'success' => true,

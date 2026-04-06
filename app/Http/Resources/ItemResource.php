@@ -46,6 +46,21 @@ class ItemResource extends JsonResource
                 'starts_at' => $activeOffer->starts_at,
                 'ends_at' => $activeOffer->ends_at,
             ] : null,
+            'offers' => $this->whenLoaded('offers', function () {
+                return $this->offers
+                    ->map(function ($offer) {
+                        return [
+                            'id' => (int) $offer->id,
+                            'title' => (string) ($offer->title ?? ''),
+                            'status' => (string) ($offer->status ?? ''),
+                            'discount_type' => $offer->discount_type,
+                            'discount_value' => $offer->discount_value,
+                            'starts_at' => $offer->starts_at,
+                            'ends_at' => $offer->ends_at,
+                        ];
+                    })
+                    ->values();
+            }, []),
             'category' => $this->whenLoaded('category', function () {
                 return [
                     'id' => $this->category->id,

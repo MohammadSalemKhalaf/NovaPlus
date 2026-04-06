@@ -48,6 +48,13 @@ class ItemStoreRequest extends FormRequest
                 }),
             ],
             'sort_order' => ['required', 'integer', 'min:0'],
+            'offer_ids' => ['sometimes', 'array'],
+            'offer_ids.*' => [
+                'integer',
+                Rule::exists('offers', 'id')->where(function ($query) use ($tenantId): void {
+                    $query->where('tenant_id', $tenantId);
+                }),
+            ],
         ];
     }
 

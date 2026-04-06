@@ -29,6 +29,7 @@ class StoreDiscoveryController extends Controller
                     'id' => $store->id,
                     'name' => $store->name,
                     'slug' => $store->slug,
+                    'image' => $store->store_image,
                     'business_type' => $store->businessType !== null ? [
                         'id' => $store->businessType->id,
                         'name' => $store->businessType->name,
@@ -67,6 +68,7 @@ class StoreDiscoveryController extends Controller
                 'id' => $store['id'],
                 'name' => $store['name'],
                 'slug' => $store['slug'],
+                'image' => $store['image'] ?? null,
                 'business_mode' => $store['business_mode'],
                 'business_type' => $store['business_type'],
                 'catalog_summary' => $store['catalog_summary'],

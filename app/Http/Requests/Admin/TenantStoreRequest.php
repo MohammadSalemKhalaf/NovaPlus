@@ -33,6 +33,7 @@ class TenantStoreRequest extends FormRequest
             'currency_code' => ['required', 'string', 'max:16'],
             'timezone' => ['required', 'string', 'max:64'],
             'whatsapp_number' => ['nullable', 'string', 'min:8', 'max:15'],
+            'store_image' => ['nullable', 'string', 'max:2048'],
         ];
     }
 

@@ -4,7 +4,9 @@ namespace App\Repositories\Catalog;
 
 use App\Models\Offer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class OfferRepository
 {
@@ -44,6 +46,9 @@ class OfferRepository
 
         return Offer::query()
             ->where('tenant_id', $tenantId)
+            ->when(Schema::hasTable('offer_items'), function ($query): void {
+                $query->with(['items:id']);
+            })
             ->when($status !== '', function ($query) use ($status): void {
                 $query->where('status', $status);
             })
@@ -74,11 +79,19 @@ class OfferRepository
      */
     public function createForTenant(array $validatedData, int $tenantId, int $userId): Offer
     {
-        return Offer::query()->create([
-            ...$validatedData,
+        $itemIds = Arr::get($validatedData, 'item_ids');
+
+        $offer = Offer::query()->create([
+            ...Arr::except($validatedData, ['item_ids']),
             'tenant_id' => $tenantId,
             'created_by' => $userId,
         ]);
+
+        if (Schema::hasTable('offer_items')) {
+            $offer->items()->sync($this->normalizeItemIds($itemIds));
+        }
+
+        return $offer;
     }
 
     public function findForTenant(int $tenantId, int $offerId): ?Offer
@@ -98,8 +111,15 @@ class OfferRepository
             return $offer;
         }
 
-        $offer->fill($validatedData);
+        $itemIdsProvided = Arr::has($validatedData, 'item_ids');
+        $itemIds = Arr::get($validatedData, 'item_ids');
+
+        $offer->fill(Arr::except($validatedData, ['item_ids']));
         $offer->save();
+
+        if ($itemIdsProvided && Schema::hasTable('offer_items')) {
+            $offer->items()->sync($this->normalizeItemIds($itemIds));
+        }
 
         return $offer;
     }
@@ -118,5 +138,21 @@ class OfferRepository
         return Offer::query()
             ->where('tenant_id', $tenantId)
             ->count();
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function normalizeItemIds(mixed $itemIds): array
+    {
+        if (! is_array($itemIds)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map(static function ($value): int {
+            return (int) $value;
+        }, $itemIds), static function (int $value): bool {
+            return $value > 0;
+        })));
     }
 }

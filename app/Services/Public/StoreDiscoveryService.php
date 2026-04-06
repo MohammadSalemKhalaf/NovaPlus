@@ -46,6 +46,7 @@ class StoreDiscoveryService
                 'tenants.slug',
                 'tenants.business_type_id',
                 'tenants.whatsapp_number',
+                'tenants.store_image',
             ])
             ->orderBy('tenants.name')
             ->orderBy('tenants.id');
@@ -82,6 +83,7 @@ class StoreDiscoveryService
                 'tenants.slug',
                 'tenants.business_type_id',
                 'tenants.whatsapp_number',
+                'tenants.store_image',
                 'tenants.business_mode',
             ])
             ->first();
@@ -99,6 +101,7 @@ class StoreDiscoveryService
             'id' => $tenant->id,
             'name' => $tenant->name,
             'slug' => $tenant->slug,
+            'image' => $tenant->store_image,
             'business_mode' => $tenant->business_mode,
             'business_type' => $tenant->businessType !== null ? [
                 'id' => $tenant->businessType->id,

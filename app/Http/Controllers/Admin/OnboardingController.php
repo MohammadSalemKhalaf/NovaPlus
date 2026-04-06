@@ -45,6 +45,7 @@ class OnboardingController extends Controller
                     'currency_code' => 'USD',
                     'timezone' => 'UTC',
                     'whatsapp_number' => $validated['tenant_whatsapp_number'] ?? null,
+                    'store_image' => $validated['tenant_store_image'] ?? null,
                 ]);
 
                 TenantUser::query()->create([

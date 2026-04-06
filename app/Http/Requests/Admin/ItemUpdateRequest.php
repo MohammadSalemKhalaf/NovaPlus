@@ -54,6 +54,13 @@ class ItemUpdateRequest extends FormRequest
                 }),
             ],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
+            'offer_ids' => ['sometimes', 'array'],
+            'offer_ids.*' => [
+                'integer',
+                Rule::exists('offers', 'id')->where(function ($query) use ($tenantId): void {
+                    $query->where('tenant_id', $tenantId);
+                }),
+            ],
         ];
     }
 

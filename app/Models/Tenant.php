@@ -27,6 +27,7 @@ class Tenant extends Model
         'currency_code',
         'timezone',
         'whatsapp_number',
+        'store_image',
         'onboarding_completed_at',
     ];
 

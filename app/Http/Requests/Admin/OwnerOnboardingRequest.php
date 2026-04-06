@@ -36,6 +36,7 @@ class OwnerOnboardingRequest extends FormRequest
                 Rule::exists('business_types', 'id')->where(fn (Builder $query) => $query->where('status', 'active')),
             ],
             'tenant_whatsapp_number' => ['nullable', 'string', 'max:32'],
+            'tenant_store_image' => ['nullable', 'string', 'max:2048'],
             'activation_channel' => ['required', 'in:email,internal,whatsapp'],
         ];
     }
