@@ -21,7 +21,8 @@ class CartController extends Controller
     public function show(ShowCartRequest $request): JsonResponse
     {
         $deviceId = $this->getDeviceIdOrFail($request);
-        $cart = $this->cartService->showCart($deviceId);
+        $tenantId = $this->getTenantIdOrFail($request);
+        $cart = $this->cartService->showCart($deviceId, $tenantId);
 
         if ($cart['id'] === null) {
             return response()->json([
@@ -44,9 +45,11 @@ class CartController extends Controller
     {
         $payload = $request->validated();
         $deviceId = $this->getDeviceIdOrFail($request);
+        $tenantId = $this->getTenantIdOrFail($request);
 
         $result = $this->cartService->addItem(
             $deviceId,
+            $tenantId,
             (int) $payload['item_id'],
             (int) $payload['quantity'],
         );
@@ -106,7 +109,8 @@ class CartController extends Controller
     public function checkoutWhatsApp(CartCheckoutWhatsAppRequest $request): JsonResponse
     {
         $deviceId = $this->getDeviceIdOrFail($request);
-        $result = $this->cartService->checkoutWhatsApp($deviceId);
+        $tenantId = $this->getTenantIdOrFail($request);
+        $result = $this->cartService->checkoutWhatsApp($deviceId, $tenantId);
 
         return response()->json([
             'success' => true,
@@ -124,9 +128,10 @@ class CartController extends Controller
     {
         $payload = $request->validated();
         $deviceId = $this->getDeviceIdOrFail($request);
+        $tenantId = $this->getTenantIdOrFail($request);
         $itemId = (int) $payload['item_id'];
 
-        $cart = $this->cartService->removeItem($deviceId, $itemId);
+        $cart = $this->cartService->removeItem($deviceId, $tenantId, $itemId);
 
         return response()->json([
             'success' => true,
@@ -141,7 +146,8 @@ class CartController extends Controller
     public function clear(ShowCartRequest $request): JsonResponse
     {
         $deviceId = $this->getDeviceIdOrFail($request);
-        $this->cartService->clear($deviceId);
+        $tenantId = $this->getTenantIdOrFail($request);
+        $this->cartService->clear($deviceId, $tenantId);
 
         return response()->json([
             'success' => true,
@@ -172,10 +178,29 @@ class CartController extends Controller
 
         Log::info('Cart Request', [
             'device_id' => $deviceId,
+            'tenant_id' => $request->header('X-Tenant-ID'),
             'endpoint' => $request->path(),
         ]);
 
         return $deviceId;
+    }
+
+    private function getTenantIdOrFail(Request $request): int
+    {
+        $tenantId = (int) $request->header('X-Tenant-ID', 0);
+
+        if ($tenantId <= 0) {
+            throw new \Illuminate\Http\Exceptions\HttpResponseException(
+                response()->json([
+                    'success' => false,
+                    'message' => 'X-Tenant-ID header is required',
+                    'data' => [],
+                    'meta' => (object) [],
+                ], 400)
+            );
+        }
+
+        return $tenantId;
     }
 
     private function formatCart($cart): array

@@ -20,6 +20,7 @@ class RemoveCartItemRequest extends FormRequest
     {
         return [
             'X-Device-ID' => ['required', 'string', 'max:255'],
+            'X-Tenant-ID' => ['required', 'integer', 'exists:tenants,id'],
             'item_id' => ['required', 'integer', 'exists:items,id'],
         ];
     }
@@ -28,6 +29,7 @@ class RemoveCartItemRequest extends FormRequest
     {
         $this->merge([
             'X-Device-ID' => (string) $this->header('X-Device-ID', ''),
+            'X-Tenant-ID' => $this->header('X-Tenant-ID'),
             'item_id' => $this->route('item_id'),
         ]);
     }

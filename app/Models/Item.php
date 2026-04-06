@@ -90,6 +90,7 @@ class Item extends Model
     public function primaryImage(): HasOne
     {
         return $this->hasOne(ItemImage::class, 'item_id')
+            ->select('item_images.*')
             ->where('item_images.is_primary', true)
             ->latestOfMany('id');
     }

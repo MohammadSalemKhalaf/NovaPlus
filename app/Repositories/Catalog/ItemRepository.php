@@ -109,6 +109,32 @@ class ItemRepository
 
         return Item::query()
             ->where('tenant_id', $tenantId)
+            ->with([
+                'primaryImage' => function ($query): void {
+                    $query->select([
+                        'item_images.id',
+                        'item_images.item_id',
+                        'item_images.storage_path',
+                        'item_images.alt_text',
+                        'item_images.sort_order',
+                        'item_images.is_primary',
+                        'item_images.created_at',
+                        'item_images.updated_at',
+                    ]);
+                },
+                'activePrice' => function ($query): void {
+                    $query->select([
+                        'item_prices.id',
+                        'item_prices.item_id',
+                        'item_prices.currency_code',
+                        'item_prices.base_price_amount',
+                        'item_prices.compare_at_price_amount',
+                        'item_prices.pricing_status',
+                        'item_prices.effective_from',
+                        'item_prices.effective_to',
+                    ]);
+                },
+            ])
             ->when($categoryId > 0, function ($query) use ($categoryId): void {
                 $query->where('category_id', $categoryId);
             })
