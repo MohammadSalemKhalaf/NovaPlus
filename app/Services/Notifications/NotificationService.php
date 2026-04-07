@@ -6,6 +6,7 @@ use App\Models\Item;
 use App\Models\Notification;
 use App\Models\Offer;
 use App\Repositories\Notifications\NotificationRepository;
+use App\Services\Realtime\FirebaseRealtimeService;
 use Illuminate\Support\Facades\DB;
 
 class NotificationService
@@ -16,6 +17,7 @@ class NotificationService
         private readonly NotificationRepository $notificationRepository,
         private readonly NotificationRecipientResolver $recipientResolver,
         private readonly NotificationPayloadBuilder $payloadBuilder,
+        private readonly FirebaseRealtimeService $firebaseRealtimeService,
     ) {
     }
 
@@ -55,7 +57,7 @@ class NotificationService
 
         $uniqueRecipientIds = array_values(array_unique(array_map('intval', $recipientIds)));
 
-        return DB::transaction(function () use ($payload, $createdBy, $uniqueRecipientIds): Notification {
+        $notification = DB::transaction(function () use ($payload, $createdBy, $uniqueRecipientIds): Notification {
             $notification = $this->notificationRepository->create([
                 'type' => $payload['type'],
                 'title' => $payload['title'],
@@ -76,6 +78,14 @@ class NotificationService
 
             return $notification;
         });
+
+        $this->pushRealtimeUnreadCounts(
+            recipientIds: $uniqueRecipientIds,
+            notificationId: (int) $notification->id,
+            tenantId: isset($payload['tenant_id']) ? (int) $payload['tenant_id'] : null,
+        );
+
+        return $notification;
     }
 
     /**
@@ -92,7 +102,7 @@ class NotificationService
             return null;
         }
 
-        return DB::transaction(function () use ($tenantId, $payload, $createdBy, $recipientIds): Notification {
+        $notification = DB::transaction(function () use ($tenantId, $payload, $createdBy, $recipientIds): Notification {
             $notification = $this->notificationRepository->findExisting(
                 type: $payload['type'],
                 notifiableType: 'tenant',
@@ -121,5 +131,37 @@ class NotificationService
 
             return $notification;
         });
+
+        $this->pushRealtimeUnreadCounts(
+            recipientIds: $recipientIds,
+            notificationId: (int) $notification->id,
+            tenantId: $tenantId,
+        );
+
+        return $notification;
+    }
+
+    /**
+     * @param array<int, int> $recipientIds
+     */
+    private function pushRealtimeUnreadCounts(array $recipientIds, int $notificationId, ?int $tenantId = null): void
+    {
+        if ($recipientIds === []) {
+            return;
+        }
+
+        $unreadCounts = $this->notificationRepository->getUnreadCountsForUsers($recipientIds);
+
+        foreach ($recipientIds as $recipientId) {
+            $userId = (int) $recipientId;
+
+            $this->firebaseRealtimeService->pushNotificationUpdate($userId, [
+                'tenant_id' => $tenantId,
+                'user_id' => $userId,
+                'notification_id' => $notificationId,
+                'unread_count' => (int) ($unreadCounts[$userId] ?? 0),
+                'updated_at' => now()->toIso8601String(),
+            ]);
+        }
     }
 }

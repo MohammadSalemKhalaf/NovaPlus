@@ -14,6 +14,7 @@ use App\Repositories\Chat\ConversationRepository;
 use App\Repositories\Chat\MessageReactionRepository;
 use App\Services\Notifications\NotificationPayloadBuilder;
 use App\Services\Notifications\NotificationService;
+use App\Services\Realtime\FirebaseRealtimeService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -33,6 +34,7 @@ class ChatService
         private readonly ItemRepository $itemRepository,
         private readonly NotificationService $notificationService,
         private readonly NotificationPayloadBuilder $notificationPayloadBuilder,
+        private readonly FirebaseRealtimeService $firebaseRealtimeService,
     ) {
     }
 
@@ -68,6 +70,7 @@ class ChatService
         );
 
         $this->broadcastMessageToOwner($conversation, $endUser);
+        $this->pushRealtimeMessage($conversation, $message);
 
         return [
             'conversation' => $conversation,
@@ -101,6 +104,7 @@ class ChatService
         );
 
         $this->broadcastMessageToOwner($conversation, $endUser);
+        $this->pushRealtimeMessage($conversation, $message);
 
         return [
             'conversation' => $conversation,
@@ -170,6 +174,7 @@ class ChatService
         );
 
         $this->broadcastMessageToOwner($conversation, $endUser);
+        $this->pushRealtimeMessage($conversation, $message);
 
         return [
             'conversation' => $conversation,
@@ -219,6 +224,7 @@ class ChatService
         );
 
         $this->broadcastMessageToOwner($conversation, $endUser);
+        $this->pushRealtimeMessage($conversation, $message);
 
         return [
             'conversation' => $conversation,
@@ -257,6 +263,7 @@ class ChatService
         );
 
         $this->broadcastMessageToEndUser($conversation, $owner);
+        $this->pushRealtimeMessage($conversation, $message);
 
         return [
             'conversation' => $conversation,
@@ -293,10 +300,14 @@ class ChatService
         }
 
         if ((int) $conversation->end_user_id === (int) $actor->id) {
-            return $this->conversationMessageRepository->markOwnerMessagesAsReadForEndUser((int) $conversation->id);
+            $updatedCount = $this->conversationMessageRepository->markOwnerMessagesAsReadForEndUser((int) $conversation->id);
+        } else {
+            $updatedCount = $this->conversationMessageRepository->markEndUserMessagesAsReadForOwner((int) $conversation->id);
         }
 
-        return $this->conversationMessageRepository->markEndUserMessagesAsReadForOwner((int) $conversation->id);
+        $this->pushRealtimeConversationRead($conversation, $actor, $updatedCount);
+
+        return $updatedCount;
     }
 
     public function addReaction(User $actor, int $messageId, string $reactionType): ?array
@@ -312,6 +323,7 @@ class ChatService
         }
 
         $reaction = $this->messageReactionRepository->create((int) $message->id, (int) $actor->id, $reactionType);
+        $this->pushRealtimeReactionUpdate($message, $actor, 'upsert');
 
         return [
             'reaction_id' => (int) $reaction->id,
@@ -330,7 +342,13 @@ class ChatService
             return null;
         }
 
-        return $this->messageReactionRepository->remove((int) $message->id, (int) $actor->id);
+        $removed = $this->messageReactionRepository->remove((int) $message->id, (int) $actor->id);
+
+        if ($removed > 0) {
+            $this->pushRealtimeReactionUpdate($message, $actor, 'remove');
+        }
+
+        return $removed;
     }
 
     public function getMessageReactions(int $messageId): array
@@ -517,6 +535,7 @@ class ChatService
                 'related_type' => 'conversation',
                 'related_id' => (int) $conversation->id,
                 'priority' => 'normal',
+                'tenant_id' => (int) $conversation->tenant_id,
             ], [(int) $tenant->owner_user_id], (int) $endUser->id);
         }
     }
@@ -540,6 +559,64 @@ class ChatService
             'related_type' => 'conversation',
             'related_id' => (int) $conversation->id,
             'priority' => 'normal',
+            'tenant_id' => (int) $conversation->tenant_id,
         ], [(int) $conversation->end_user_id], (int) $owner->id);
+    }
+
+    /**
+     * @param array<string, mixed> $message
+     */
+    private function pushRealtimeMessage(Conversation $conversation, array $message): void
+    {
+        $this->firebaseRealtimeService->pushMessage(
+            conversationId: (int) $conversation->id,
+            messageId: (int) $message['id'],
+            payload: [
+                'id' => (int) $message['id'],
+                'conversation_id' => (int) $conversation->id,
+                'tenant_id' => (int) $conversation->tenant_id,
+                'sender_type' => (string) $message['sender_type'],
+                'sender_id' => (int) $message['sender_id'],
+                'message_type' => (string) $message['message_type'],
+                'body' => (string) $message['body'],
+                'media_url' => $message['media_url'],
+                'metadata' => $message['metadata'],
+                'created_at' => $message['created_at'],
+            ]
+        );
+    }
+
+    private function pushRealtimeReactionUpdate(ConversationMessage $message, User $actor, string $action): void
+    {
+        $conversation = $message->relationLoaded('conversation') ? $message->conversation : null;
+        $counts = $this->messageReactionRepository->getCountByMessage((int) $message->id);
+
+        $this->firebaseRealtimeService->pushReactionUpdate(
+            conversationId: (int) $message->conversation_id,
+            messageId: (int) $message->id,
+            payload: [
+                'tenant_id' => $conversation?->tenant_id,
+                'conversation_id' => (int) $message->conversation_id,
+                'message_id' => (int) $message->id,
+                'action' => $action,
+                'actor_user_id' => (int) $actor->id,
+                'counts' => $counts,
+                'updated_at' => now()->toIso8601String(),
+            ]
+        );
+    }
+
+    private function pushRealtimeConversationRead(Conversation $conversation, User $actor, int $updatedCount): void
+    {
+        $this->firebaseRealtimeService->pushConversationRead(
+            conversationId: (int) $conversation->id,
+            payload: [
+                'tenant_id' => (int) $conversation->tenant_id,
+                'conversation_id' => (int) $conversation->id,
+                'actor_user_id' => (int) $actor->id,
+                'updated_count' => $updatedCount,
+                'read_at' => now()->toIso8601String(),
+            ]
+        );
     }
 }

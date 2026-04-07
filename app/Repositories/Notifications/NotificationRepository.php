@@ -141,6 +141,28 @@ class NotificationRepository
             ->count();
     }
 
+    /**
+     * @param array<int, int> $userIds
+     * @return array<int, int>
+     */
+    public function getUnreadCountsForUsers(array $userIds): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $userIds)));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        return NotificationRecipient::query()
+            ->whereIn('user_id', $ids)
+            ->where('is_read', false)
+            ->groupBy('user_id')
+            ->selectRaw('user_id, COUNT(*) as unread_count')
+            ->pluck('unread_count', 'user_id')
+            ->mapWithKeys(static fn ($count, $userId): array => [(int) $userId => (int) $count])
+            ->all();
+    }
+
     public function getForUser(int $userId, int $notificationId): ?NotificationRecipient
     {
         return NotificationRecipient::query()
