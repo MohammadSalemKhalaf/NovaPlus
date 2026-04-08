@@ -370,7 +370,7 @@ class ItemRepository
         return $this->publicItemSelectColumns();
     }
 
-    private function applyActivePriceConstraint(Builder $query, int $tenantId): void
+    private function applyActivePriceConstraint($query, int $tenantId): void
     {
         $query
             ->where('item_prices.tenant_id', $tenantId)

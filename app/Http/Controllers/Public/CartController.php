@@ -22,7 +22,7 @@ class CartController extends Controller
     {
         $deviceId = $this->getDeviceIdOrFail($request);
         $tenantId = $this->getTenantIdOrFail($request);
-        $cart = $this->cartService->showCart($deviceId, $tenantId);
+        $cart = $this->cartService->showCart($deviceId, $tenantId, $request->user('sanctum'));
 
         if ($cart['id'] === null) {
             return response()->json([
@@ -52,6 +52,7 @@ class CartController extends Controller
             $tenantId,
             (int) $payload['item_id'],
             (int) $payload['quantity'],
+            $request->user('sanctum'),
         );
 
         return response()->json([
@@ -73,7 +74,7 @@ class CartController extends Controller
         $deviceId = $this->getDeviceIdOrFail($request);
         $itemId = (int) $request->input('item_id');
 
-        $result = $this->cartService->incrementItem($deviceId, $itemId);
+        $result = $this->cartService->incrementItem($deviceId, $itemId, $request->user('sanctum'));
 
         return response()->json([
             'success' => true,
@@ -94,7 +95,7 @@ class CartController extends Controller
         $deviceId = $this->getDeviceIdOrFail($request);
         $itemId = (int) $request->input('item_id');
 
-        $result = $this->cartService->decrementItem($deviceId, $itemId);
+        $result = $this->cartService->decrementItem($deviceId, $itemId, $request->user('sanctum'));
 
         return response()->json([
             'success' => true,
@@ -110,7 +111,7 @@ class CartController extends Controller
     {
         $deviceId = $this->getDeviceIdOrFail($request);
         $tenantId = $this->getTenantIdOrFail($request);
-        $result = $this->cartService->checkoutWhatsApp($deviceId, $tenantId);
+        $result = $this->cartService->checkoutWhatsApp($deviceId, $tenantId, $request->user('sanctum'));
 
         return response()->json([
             'success' => true,
@@ -131,7 +132,7 @@ class CartController extends Controller
         $tenantId = $this->getTenantIdOrFail($request);
         $itemId = (int) $payload['item_id'];
 
-        $cart = $this->cartService->removeItem($deviceId, $tenantId, $itemId);
+        $cart = $this->cartService->removeItem($deviceId, $tenantId, $itemId, $request->user('sanctum'));
 
         return response()->json([
             'success' => true,
@@ -147,7 +148,7 @@ class CartController extends Controller
     {
         $deviceId = $this->getDeviceIdOrFail($request);
         $tenantId = $this->getTenantIdOrFail($request);
-        $this->cartService->clear($deviceId, $tenantId);
+        $this->cartService->clear($deviceId, $tenantId, $request->user('sanctum'));
 
         return response()->json([
             'success' => true,

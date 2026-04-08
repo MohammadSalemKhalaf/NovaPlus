@@ -34,11 +34,15 @@ class EnsureTenantOwnerMiddleware
             ], 400);
         }
 
-        $isOwner = $user->tenantUsers()
+        $isOwnerByTenantMembership = $user->tenantUsers()
             ->where('tenant_id', $tenant->getKey())
             ->where('status', 'active')
             ->where('role', 'owner')
             ->exists();
+
+        $isOwnerByTenantRecord = (int) ($tenant->owner_user_id ?? 0) === (int) $user->id;
+
+        $isOwner = $isOwnerByTenantMembership || $isOwnerByTenantRecord;
 
         if (!$isOwner) {
             return response()->json([

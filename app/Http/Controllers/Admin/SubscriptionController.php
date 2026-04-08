@@ -12,9 +12,55 @@ use App\Models\TenantUser;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 class SubscriptionController extends Controller
 {
+    /**
+     * Get latest active (unused) subscription code for current sales agent/admin.
+     */
+    public function latestActiveCode(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            $query = SubscriptionCode::query()
+                ->active()
+                ->latest('id');
+
+            // Sales agents should only see their own generated codes.
+            if ($user !== null) {
+                $query->where('sold_by_user_id', $user->id);
+            }
+
+            $subscriptionCode = $query->first();
+
+            return response()->json([
+                'success' => true,
+                'message' => $subscriptionCode === null
+                    ? 'No active subscription code found.'
+                    : 'Latest active subscription code fetched successfully.',
+                'data' => $subscriptionCode === null
+                    ? (object) []
+                    : [
+                        'subscription_code_id' => $subscriptionCode->id,
+                        'code' => $subscriptionCode->code,
+                        'duration_months' => $subscriptionCode->duration_months,
+                        'status' => $subscriptionCode->status,
+                        'created_at' => $subscriptionCode->created_at,
+                    ],
+                'meta' => (object) [],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => (object) [],
+                'meta' => (object) [],
+            ], 422);
+        }
+    }
+
     /**
      * Create a new subscription code
      */

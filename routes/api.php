@@ -34,6 +34,7 @@ use App\Http\Controllers\Public\PublicCatalogController;
 use App\Http\Controllers\Public\StoreDiscoveryController;
 use App\Http\Controllers\SalesAgent\ProfileController as SalesAgentProfileController;
 use App\Http\Controllers\EndUser\CartPersistenceController;
+use App\Http\Controllers\EndUser\OrderController as EndUserOrderController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EndUser\EndUserAuthController;
 use App\Http\Controllers\EndUser\FavoritesController;
@@ -84,6 +85,7 @@ Route::prefix('v1/admin')->group(function (): void {
             });
 
             Route::prefix('subscriptions')->group(function (): void {
+                Route::get('codes/latest-active', [SubscriptionController::class, 'latestActiveCode']);
                 Route::post('codes', [SubscriptionController::class, 'storeCode']);
                 Route::post('redeem', [SubscriptionController::class, 'redeem']);
             });
@@ -235,6 +237,8 @@ Route::prefix('v1/enduser')->group(function (): void {
             Route::get('/', [RecentlyViewedController::class, 'index']);
             Route::post('{tenant_id}', [RecentlyViewedController::class, 'store']);
         });
+
+        Route::get('orders', [EndUserOrderController::class, 'index']);
 
         Route::prefix('cart')->group(function (): void {
             Route::get('/', [CartPersistenceController::class, 'show']);

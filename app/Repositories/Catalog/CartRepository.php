@@ -91,6 +91,18 @@ class CartRepository
             ->first();
     }
 
+    public function findActiveByUserAndTenantForUpdate(int $userId, int $tenantId): ?Cart
+    {
+        return Cart::query()
+            ->where('user_id', $userId)
+            ->where('tenant_id', $tenantId)
+            ->where('status', 'active')
+            ->with($this->cartRelations())
+            ->lockForUpdate()
+            ->orderByDesc('id')
+            ->first();
+    }
+
     public function firstOrCreateActiveByUserAndTenant(int $userId, int $tenantId, ?string $deviceId = null): Cart
     {
         return Cart::query()->firstOrCreate([

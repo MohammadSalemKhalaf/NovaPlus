@@ -128,9 +128,17 @@ class ProfileController extends Controller
         $stores = Tenant::query()
             ->with('owner:id,name,email,status')
             ->whereHas('owner', function ($query) use ($agent): void {
-                $query->where($this->ownerCreatorColumn(), $agent->id)
-                    ->whereHas('roles', function ($roleQuery): void {
-                        $roleQuery->where('slug', 'store_owner');
+                $query
+                    ->where($this->ownerCreatorColumn(), $agent->id)
+                    ->where(function ($ownerTypeQuery): void {
+                        $ownerTypeQuery
+                            ->whereHas('roles', function ($roleQuery): void {
+                                $roleQuery->where('slug', 'store_owner');
+                            })
+                            ->orWhereHas('tenantUsers', function ($tenantUserQuery): void {
+                                $tenantUserQuery->where('tenant_users.role', 'owner');
+                            })
+                            ->orWhereHas('ownedTenants');
                     });
             })
             ->orderByDesc('created_at')
@@ -158,9 +166,17 @@ class ProfileController extends Controller
             ->with('owner:id,name,email,status')
             ->where('id', $id)
             ->whereHas('owner', function ($query) use ($agent): void {
-                $query->where($this->ownerCreatorColumn(), $agent->id)
-                    ->whereHas('roles', function ($roleQuery): void {
-                        $roleQuery->where('slug', 'store_owner');
+                $query
+                    ->where($this->ownerCreatorColumn(), $agent->id)
+                    ->where(function ($ownerTypeQuery): void {
+                        $ownerTypeQuery
+                            ->whereHas('roles', function ($roleQuery): void {
+                                $roleQuery->where('slug', 'store_owner');
+                            })
+                            ->orWhereHas('tenantUsers', function ($tenantUserQuery): void {
+                                $tenantUserQuery->where('tenant_users.role', 'owner');
+                            })
+                            ->orWhereHas('ownedTenants');
                     });
             })
             ->first(['id', 'owner_user_id', 'name', 'slug', 'status', 'business_type_id', 'created_at']);
