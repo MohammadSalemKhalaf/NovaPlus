@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        if (!Schema::hasColumn('users', 'status')) {
+            Schema::table('users', function (Blueprint $table): void {
+                $table->string('status')->default('active')->index();
+            });
+        }
+
+        if (!Schema::hasColumn('users', 'created_by')) {
+            Schema::table('users', function (Blueprint $table): void {
+                $table->foreignId('created_by')
+                    ->nullable()
+                    ->after('status')
+                    ->constrained('users')
+                    ->nullOnDelete();
+            });
+        }
+    }
+
+    public function down(): void
+    {
+        if (Schema::hasColumn('users', 'created_by')) {
+            Schema::table('users', function (Blueprint $table): void {
+                $table->dropConstrainedForeignId('created_by');
+            });
+        }
+    }
+};

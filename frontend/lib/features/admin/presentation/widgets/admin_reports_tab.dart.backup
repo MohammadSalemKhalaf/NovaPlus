@@ -1,0 +1,1503 @@
+import 'package:flutter/material.dart';
+
+import '../../domain/entities/admin_sales_agent_entity.dart';
+import '../../domain/repositories/admin_dashboard_repository.dart';
+
+class AdminReportsTab extends StatefulWidget {
+  const AdminReportsTab({
+    super.key,
+    required this.repository,
+    required this.refreshToken,
+  });
+
+  final AdminDashboardRepository repository;
+  final int refreshToken;
+
+  @override
+  State<AdminReportsTab> createState() => _AdminReportsTabState();
+}
+
+class _AdminReportsTabState extends State<AdminReportsTab> {
+  final TextEditingController _agentSearchController = TextEditingController();
+
+  _ReportSection _selectedSection = _ReportSection.all;
+  int? _selectedAgentId;
+  String _agentSearchQuery = '';
+  int _perPage = 20;
+  int _expiringDays = 7;
+  bool _isLoading = true;
+  String? _errorMessage;
+  int _loadVersion = 0;
+
+  List<_AgentOption> _agentOptions = const <_AgentOption>[];
+  List<_CreatedOwnersAgentRow> _createdOwnersRows =
+      const <_CreatedOwnersAgentRow>[];
+  List<_RevenueAgentRow> _revenueRows = const <_RevenueAgentRow>[];
+  List<_RevenueAgentRow> _topRevenueRows = const <_RevenueAgentRow>[];
+  List<_SubscriptionRow> _activeSubscriptions = const <_SubscriptionRow>[];
+  List<_SubscriptionRow> _expiredSubscriptions = const <_SubscriptionRow>[];
+  List<_SubscriptionRow> _expiringSoonSubscriptions =
+      const <_SubscriptionRow>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReports();
+  }
+
+  @override
+  void didUpdateWidget(covariant AdminReportsTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshToken != widget.refreshToken) {
+      _loadReports();
+    }
+  }
+
+  @override
+  void dispose() {
+    _agentSearchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadReports() async {
+    final version = ++_loadVersion;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final results = await Future.wait<Map<String, dynamic>>([
+        widget.repository.getCreatedOwnersReport(
+          salesAgentId: _selectedAgentId,
+          perPage: _perPage,
+        ),
+        widget.repository.getRevenueByAgentReport(
+          salesAgentId: _selectedAgentId,
+        ),
+        widget.repository.getTopRevenueAgents(limit: 8),
+        widget.repository.getActiveSubscriptionsReport(
+          createdByAgentId: _selectedAgentId,
+          perPage: _perPage,
+        ),
+        widget.repository.getExpiredSubscriptionsReport(
+          createdByAgentId: _selectedAgentId,
+          perPage: _perPage,
+        ),
+        widget.repository.getExpiringSoonSubscriptionsReport(
+          createdByAgentId: _selectedAgentId,
+          days: _expiringDays,
+          perPage: _perPage,
+        ),
+      ]);
+
+      final agents = await widget.repository.getSalesAgents(perPage: 100);
+
+      if (!mounted || version != _loadVersion) {
+        return;
+      }
+
+      final createdOwnersPayload = results[0];
+      final revenuePayload = results[1];
+      final topRevenuePayload = results[2];
+      final activePayload = results[3];
+      final expiredPayload = results[4];
+      final expiringSoonPayload = results[5];
+
+      final directoryRows = _parseAgentDirectory(agents);
+      _AgentOption? selectedOption;
+      if (_selectedAgentId != null) {
+        for (final option in directoryRows) {
+          if (option.id == _selectedAgentId) {
+            selectedOption = option;
+            break;
+          }
+        }
+      }
+
+      setState(() {
+        _agentOptions = directoryRows;
+        if (_selectedAgentId != null && selectedOption == null) {
+          _selectedAgentId = null;
+        }
+        _createdOwnersRows = _parseCreatedOwnersRows(
+          createdOwnersPayload['data'],
+        );
+        _revenueRows = _parseRevenueRows(revenuePayload['data']);
+        _topRevenueRows = _parseRevenueRows(topRevenuePayload['data']);
+        _activeSubscriptions = _parseSubscriptionRows(activePayload['data']);
+        _expiredSubscriptions = _parseSubscriptionRows(expiredPayload['data']);
+        _expiringSoonSubscriptions = _parseSubscriptionRows(
+          expiringSoonPayload['data'],
+        );
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted || version != _loadVersion) {
+        return;
+      }
+
+      setState(() {
+        _errorMessage = '$error';
+        _isLoading = false;
+      });
+    }
+  }
+
+  List<_AgentOption> _parseAgentDirectory(List<AdminSalesAgentEntity> agents) {
+    return agents
+        .map(
+          (agent) =>
+              _AgentOption(id: agent.id, name: agent.name, email: agent.email),
+        )
+        .toList(growable: false)
+      ..sort((left, right) => left.name.compareTo(right.name));
+  }
+
+  List<_CreatedOwnersAgentRow> _parseCreatedOwnersRows(dynamic data) {
+    final rows = _readList(data, 'sales_agents');
+    return rows
+        .map(
+          (item) => _CreatedOwnersAgentRow(
+            id: _readInt(item, 'id') ?? 0,
+            name: _readString(item, 'name'),
+            email: _readString(item, 'email'),
+            status: _readString(item, 'status'),
+            createdAt: _readString(item, 'created_at'),
+            ownersCount: _readInt(item, 'owners_count') ?? 0,
+            storesCount: _readInt(item, 'stores_count') ?? 0,
+            owners: _readOwners(item['owners']),
+          ),
+        )
+        .where((item) => item.id > 0)
+        .toList(growable: false);
+  }
+
+  List<_OwnerSummary> _readOwners(dynamic data) {
+    final rows = _readListValue(data);
+    return rows
+        .map(
+          (item) => _OwnerSummary(
+            id: _readInt(item, 'id') ?? 0,
+            name: _readString(item, 'name'),
+            email: _readString(item, 'email'),
+            status: _readString(item, 'status'),
+            createdAt: _readString(item, 'created_at'),
+            stores: _readStores(item['stores']),
+          ),
+        )
+        .where((item) => item.id > 0)
+        .toList(growable: false);
+  }
+
+  List<_StoreSummary> _readStores(dynamic data) {
+    final rows = _readListValue(data);
+    return rows
+        .map(
+          (item) => _StoreSummary(
+            id: _readInt(item, 'id') ?? 0,
+            name: _readString(item, 'name'),
+            slug: _readString(item, 'slug'),
+            status: _readString(item, 'status'),
+            businessTypeId: _readInt(item, 'business_type_id') ?? 0,
+            createdAt: _readString(item, 'created_at'),
+          ),
+        )
+        .where((item) => item.id > 0)
+        .toList(growable: false);
+  }
+
+  List<_RevenueAgentRow> _parseRevenueRows(dynamic data) {
+    final rows = _readList(data, 'agents');
+    return rows
+        .map(
+          (item) => _RevenueAgentRow(
+            id: _readInt(item, 'user_id') ?? _readInt(item, 'id') ?? 0,
+            name: _readString(item, 'name'),
+            email: _readString(item, 'email'),
+            totalSubscriptions: _readInt(item, 'total_subscriptions') ?? 0,
+            totalRevenue: _readDouble(item, 'total_revenue') ?? 0,
+            performanceScore: _readDouble(item, 'performance_score'),
+          ),
+        )
+        .where((item) => item.id > 0)
+        .toList(growable: false);
+  }
+
+  List<_SubscriptionRow> _parseSubscriptionRows(dynamic data) {
+    final rows = _readList(data, 'subscriptions');
+    return rows
+        .map(
+          (item) => _SubscriptionRow(
+            id: _readInt(item, 'id') ?? 0,
+            tenantName: _readNestedString(item, 'tenant', 'name'),
+            tenantSlug: _readNestedString(item, 'tenant', 'slug'),
+            planCode: _readString(item, 'plan_code'),
+            code: _readString(item, 'code'),
+            activationCode: _readString(item, 'activation_code'),
+            status: _readString(item, 'status'),
+            startsAt: _readString(item, 'starts_at'),
+            endsAt: _readString(item, 'ends_at'),
+            createdAt: _readString(item, 'created_at'),
+            createdByName: _readNestedString(item, 'created_by_admin', 'name'),
+            soldByName: _readNestedString(item, 'sold_by_user', 'name'),
+          ),
+        )
+        .where((item) => item.id > 0)
+        .toList(growable: false);
+  }
+
+  List<Map<String, dynamic>> _readList(dynamic data, String key) {
+    if (data is Map) {
+      final list = data[key];
+      return _readListValue(list);
+    }
+    return const <Map<String, dynamic>>[];
+  }
+
+  List<Map<String, dynamic>> _readListValue(dynamic value) {
+    if (value is! List) {
+      return const <Map<String, dynamic>>[];
+    }
+
+    return value
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList(growable: false);
+  }
+
+  int? _readInt(Map<String, dynamic> item, String key) {
+    final value = item[key];
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  double? _readDouble(Map<String, dynamic> item, String key) {
+    final value = item[key];
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value?.toString() ?? '');
+  }
+
+  String _readString(Map<String, dynamic> item, String key) {
+    return item[key]?.toString().trim() ?? '';
+  }
+
+  String _readNestedString(
+    Map<String, dynamic> item,
+    String parentKey,
+    String childKey,
+  ) {
+    final nested = item[parentKey];
+    if (nested is Map) {
+      return nested[childKey]?.toString().trim() ?? '';
+    }
+    return '';
+  }
+
+  List<_AgentOption> get _filteredAgentOptions {
+    final query = _agentSearchQuery.trim().toLowerCase();
+    final filtered = _agentOptions
+        .where((item) {
+          if (query.isEmpty) {
+            return true;
+          }
+          return item.name.toLowerCase().contains(query) ||
+              item.email.toLowerCase().contains(query);
+        })
+        .toList(growable: false);
+
+    if (_selectedAgentId != null) {
+      final selected = _agentOptions
+          .where((item) => item.id == _selectedAgentId)
+          .toList(growable: false);
+      for (final option in selected) {
+        if (filtered.every((item) => item.id != option.id)) {
+          filtered.insert(0, option);
+        }
+      }
+    }
+
+    return filtered;
+  }
+
+  _AgentOption? get _selectedAgentOption {
+    if (_selectedAgentId == null) {
+      return null;
+    }
+    for (final option in _agentOptions) {
+      if (option.id == _selectedAgentId) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  String _formatMoney(double value) {
+    if (value >= 1000000) {
+      return '\$${(value / 1000000).toStringAsFixed(1)}M';
+    }
+    if (value >= 1000) {
+      return '\$${(value / 1000).toStringAsFixed(1)}K';
+    }
+    return '\$${value.toStringAsFixed(0)}';
+  }
+
+  String _formatDate(String value) {
+    final date = DateTime.tryParse(value);
+    if (date == null) {
+      return '-';
+    }
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
+  }
+
+  Color _statusColor(String value) {
+    final normalized = value.toLowerCase().trim();
+    if (normalized.contains('active')) {
+      return const Color(0xFF1F7A4D);
+    }
+    if (normalized.contains('expired')) {
+      return const Color(0xFFB00020);
+    }
+    if (normalized.contains('cancel')) {
+      return const Color(0xFF9A6700);
+    }
+    return const Color(0xFF6A4EFF);
+  }
+
+  int get _createdOwnerCount =>
+      _createdOwnersRows.fold<int>(0, (sum, item) => sum + item.ownersCount);
+
+  int get _storeCount =>
+      _createdOwnersRows.fold<int>(0, (sum, item) => sum + item.storesCount);
+
+  double get _revenueTotal =>
+      _revenueRows.fold<double>(0, (sum, item) => sum + item.totalRevenue);
+
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 48,
+              color: Color(0xFFB00020),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Failed to load reports',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: const Color(0xFFF2F2FF),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage ?? 'Unknown error',
+              style: const TextStyle(color: Color(0xFFBDBDD8)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: _loadReports,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return _buildLoadingState();
+    }
+
+    if (_errorMessage != null) {
+      return _buildErrorState();
+    }
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+      children: [
+        _buildFilterPanel(),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            _MetricCard(
+              label: 'Agents in View',
+              value: '${_agentOptions.length}',
+              icon: Icons.group_rounded,
+            ),
+            _MetricCard(
+              label: 'Created Owners',
+              value: '$_createdOwnerCount',
+              icon: Icons.person_add_alt_1_rounded,
+            ),
+            _MetricCard(
+              label: 'Stores Created',
+              value: '$_storeCount',
+              icon: Icons.store_rounded,
+            ),
+            _MetricCard(
+              label: 'Revenue',
+              value: _formatMoney(_revenueTotal),
+              icon: Icons.payments_rounded,
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildSectionPicker(),
+        const SizedBox(height: 16),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          child: _buildCurrentSectionView(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionPicker() {
+    return _SectionCard(
+      title: 'Report Views',
+      subtitle: 'Switch between all reports or focus on one group at a time.',
+      icon: Icons.view_column_rounded,
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: _ReportSection.values
+            .map((section) {
+              final isSelected = section == _selectedSection;
+              return ChoiceChip(
+                label: Text(section.label),
+                selected: isSelected,
+                onSelected: (_) {
+                  setState(() => _selectedSection = section);
+                },
+                selectedColor: const Color(0xFF7B61FF).withOpacity(0.22),
+                backgroundColor: const Color(0xFF151528),
+                labelStyle: TextStyle(
+                  color: isSelected
+                      ? const Color(0xFFF2F2FF)
+                      : const Color(0xFFBDBDD8),
+                  fontWeight: FontWeight.w700,
+                ),
+                side: BorderSide(
+                  color: isSelected
+                      ? const Color(0xFF7B61FF)
+                      : const Color(0xFF2A2A48),
+                ),
+              );
+            })
+            .toList(growable: false),
+      ),
+    );
+  }
+
+  Widget _buildCurrentSectionView() {
+    return switch (_selectedSection) {
+      _ReportSection.all => _buildAllReportsView(),
+      _ReportSection.createdOwners => _buildCreatedOwnersSection(),
+      _ReportSection.revenue => _buildRevenueSummaryView(),
+      _ReportSection.subscriptions => _buildSubscriptionsView(),
+    };
+  }
+
+  Widget _buildAllReportsView() {
+    return Column(
+      key: const ValueKey('all-reports'),
+      children: [
+        _buildCreatedOwnersSection(),
+        const SizedBox(height: 16),
+        _buildRevenueSection(),
+        const SizedBox(height: 16),
+        _buildTopRevenueSection(),
+        const SizedBox(height: 16),
+        _buildSubscriptionSection(
+          title: 'Active Subscriptions',
+          subtitle: 'Live subscriptions currently in service.',
+          rows: _activeSubscriptions,
+          accent: const Color(0xFF1F7A4D),
+        ),
+        const SizedBox(height: 16),
+        _buildSubscriptionSection(
+          title: 'Expired Subscriptions',
+          subtitle: 'Active subscriptions that already ended.',
+          rows: _expiredSubscriptions,
+          accent: const Color(0xFFB00020),
+        ),
+        const SizedBox(height: 16),
+        _buildSubscriptionSection(
+          title: 'Expiring Soon',
+          subtitle: 'Subscriptions ending within the selected window.',
+          rows: _expiringSoonSubscriptions,
+          accent: const Color(0xFFFFB86C),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRevenueSummaryView() {
+    return Column(
+      key: const ValueKey('revenue-reports'),
+      children: [
+        _buildRevenueSection(),
+        const SizedBox(height: 16),
+        _buildTopRevenueSection(),
+      ],
+    );
+  }
+
+  Widget _buildSubscriptionsView() {
+    return Column(
+      key: const ValueKey('subscriptions-reports'),
+      children: [
+        _buildSubscriptionSection(
+          title: 'Active Subscriptions',
+          subtitle: 'Live subscriptions currently in service.',
+          rows: _activeSubscriptions,
+          accent: const Color(0xFF1F7A4D),
+        ),
+        const SizedBox(height: 16),
+        _buildSubscriptionSection(
+          title: 'Expired Subscriptions',
+          subtitle: 'Active subscriptions that already ended.',
+          rows: _expiredSubscriptions,
+          accent: const Color(0xFFB00020),
+        ),
+        const SizedBox(height: 16),
+        _buildSubscriptionSection(
+          title: 'Expiring Soon',
+          subtitle: 'Subscriptions ending within the selected window.',
+          rows: _expiringSoonSubscriptions,
+          accent: const Color(0xFFFFB86C),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterPanel() {
+    final options = _filteredAgentOptions;
+    final selectedOption = _selectedAgentOption;
+
+    return _SectionCard(
+      title: 'Reports and Filters',
+      subtitle:
+          'Use backend-backed filters to slice the data the same way the admin API does.',
+      icon: Icons.query_stats_rounded,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _agentSearchController,
+            onChanged: (value) => setState(() => _agentSearchQuery = value),
+            style: const TextStyle(color: Color(0xFFF2F2FF)),
+            decoration: InputDecoration(
+              hintText: 'Search sales agent by name or email',
+              hintStyle: const TextStyle(color: Color(0xFF8E8EB2)),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: Color(0xFF7B61FF),
+              ),
+              suffixIcon: _agentSearchController.text.trim().isEmpty
+                  ? null
+                  : IconButton(
+                      onPressed: () {
+                        _agentSearchController.clear();
+                        setState(() => _agentSearchQuery = '');
+                      },
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Color(0xFF8E8EB2),
+                      ),
+                    ),
+              filled: true,
+              fillColor: const Color(0xFF161628).withOpacity(0.7),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<int?>(
+            value: selectedOption?.id,
+            isExpanded: true,
+            dropdownColor: const Color(0xFF12122A),
+            decoration: InputDecoration(
+              labelText: 'Sales Agent',
+              labelStyle: const TextStyle(color: Color(0xFFA3A3C2)),
+              prefixIcon: const Icon(
+                Icons.person_search_rounded,
+                color: Color(0xFF7B61FF),
+              ),
+              filled: true,
+              fillColor: const Color(0xFF161628).withOpacity(0.7),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            items: [
+              const DropdownMenuItem<int?>(
+                value: null,
+                child: Text('All agents'),
+              ),
+              ...options.map(
+                (agent) => DropdownMenuItem<int?>(
+                  value: agent.id,
+                  child: Text(
+                    '${agent.name}  •  ${agent.email}',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
+            onChanged: (value) {
+              setState(() => _selectedAgentId = value);
+              _loadReports();
+            },
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _SmallFilterDropdown(
+                label: 'Rows per report',
+                value: _perPage,
+                values: const [10, 20, 50],
+                onChanged: (value) {
+                  if (value == null) {
+                    return;
+                  }
+                  setState(() => _perPage = value);
+                  _loadReports();
+                },
+              ),
+              _SmallFilterDropdown(
+                label: 'Expiring window',
+                value: _expiringDays,
+                values: const [7, 14, 30],
+                onChanged: (value) {
+                  if (value == null) {
+                    return;
+                  }
+                  setState(() => _expiringDays = value);
+                  _loadReports();
+                },
+              ),
+              if (_selectedAgentId != null)
+                ActionChip(
+                  label: const Text('Clear agent filter'),
+                  onPressed: () {
+                    setState(() => _selectedAgentId = null);
+                    _loadReports();
+                  },
+                ),
+              FilledButton.icon(
+                onPressed: _loadReports,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Refresh'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCreatedOwnersSection() {
+    return _SectionCard(
+      title: 'Created Owners / Stores by Agent',
+      subtitle:
+          'Each row mirrors the backend report and can be expanded for nested owners and stores.',
+      icon: Icons.groups_rounded,
+      child: _buildTableWrapper(
+        minWidth: 920,
+        child: DataTable(
+          headingRowColor: MaterialStateProperty.all(const Color(0xFF1B1B33)),
+          dataRowColor: MaterialStateProperty.resolveWith((states) {
+            if (states.contains(MaterialState.selected)) {
+              return const Color(0xFF262646);
+            }
+            return const Color(0xFF141425);
+          }),
+          columns: const [
+            DataColumn(label: Text('Agent')),
+            DataColumn(label: Text('Owners')),
+            DataColumn(label: Text('Stores')),
+            DataColumn(label: Text('Status')),
+            DataColumn(label: Text('Created')),
+            DataColumn(label: Text('Details')),
+          ],
+          rows: _createdOwnersRows
+              .map((row) {
+                return DataRow(
+                  cells: [
+                    DataCell(Text('${row.name}\n${row.email}')),
+                    DataCell(Text('${row.ownersCount}')),
+                    DataCell(Text('${row.storesCount}')),
+                    DataCell(
+                      _StatusBadge(
+                        label: row.status,
+                        color: _statusColor(row.status),
+                      ),
+                    ),
+                    DataCell(Text(_formatDate(row.createdAt))),
+                    DataCell(
+                      TextButton(
+                        onPressed: () => _showCreatedOwnersDetails(row),
+                        child: const Text('View'),
+                      ),
+                    ),
+                  ],
+                );
+              })
+              .toList(growable: false),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRevenueSection() {
+    return _SectionCard(
+      title: 'Revenue By Agent',
+      subtitle:
+          'Aggregated subscription revenue per sales agent from the revenue endpoint.',
+      icon: Icons.bar_chart_rounded,
+      child: _buildTableWrapper(
+        minWidth: 760,
+        child: DataTable(
+          headingRowColor: MaterialStateProperty.all(const Color(0xFF1B1B33)),
+          columns: const [
+            DataColumn(label: Text('Agent')),
+            DataColumn(label: Text('Subscriptions')),
+            DataColumn(label: Text('Revenue')),
+            DataColumn(label: Text('Score')),
+          ],
+          rows: _revenueRows
+              .map((row) {
+                return DataRow(
+                  cells: [
+                    DataCell(Text('${row.name}\n${row.email}')),
+                    DataCell(Text('${row.totalSubscriptions}')),
+                    DataCell(Text(_formatMoney(row.totalRevenue))),
+                    DataCell(
+                      Text(
+                        row.performanceScore == null
+                            ? '-'
+                            : row.performanceScore!.toStringAsFixed(1),
+                      ),
+                    ),
+                  ],
+                );
+              })
+              .toList(growable: false),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopRevenueSection() {
+    return _SectionCard(
+      title: 'Top Revenue Agents',
+      subtitle: 'Quick ranking of the highest revenue agents.',
+      icon: Icons.leaderboard_rounded,
+      child: _buildTableWrapper(
+        minWidth: 720,
+        child: DataTable(
+          headingRowColor: MaterialStateProperty.all(const Color(0xFF1B1B33)),
+          columns: const [
+            DataColumn(label: Text('Rank')),
+            DataColumn(label: Text('Agent')),
+            DataColumn(label: Text('Revenue')),
+            DataColumn(label: Text('Performance')),
+          ],
+          rows: _topRevenueRows
+              .asMap()
+              .entries
+              .map((entry) {
+                final row = entry.value;
+                return DataRow(
+                  cells: [
+                    DataCell(Text('#${entry.key + 1}')),
+                    DataCell(Text('${row.name}\n${row.email}')),
+                    DataCell(Text(_formatMoney(row.totalRevenue))),
+                    DataCell(
+                      Text(
+                        row.performanceScore == null
+                            ? '-'
+                            : row.performanceScore!.toStringAsFixed(1),
+                      ),
+                    ),
+                  ],
+                );
+              })
+              .toList(growable: false),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionSection({
+    required String title,
+    required String subtitle,
+    required List<_SubscriptionRow> rows,
+    required Color accent,
+  }) {
+    return _SectionCard(
+      title: title,
+      subtitle: subtitle,
+      icon: Icons.receipt_long_rounded,
+      accent: accent,
+      child: _buildTableWrapper(
+        minWidth: 980,
+        child: rows.isEmpty
+            ? _EmptyInlineState(
+                title: 'No rows found',
+                message:
+                    'The selected filter combination returned no subscriptions.',
+              )
+            : DataTable(
+                headingRowColor: MaterialStateProperty.all(
+                  const Color(0xFF1B1B33),
+                ),
+                columns: const [
+                  DataColumn(label: Text('Tenant')),
+                  DataColumn(label: Text('Plan')),
+                  DataColumn(label: Text('Status')),
+                  DataColumn(label: Text('Ends')),
+                  DataColumn(label: Text('Created By')),
+                  DataColumn(label: Text('Code')),
+                ],
+                rows: rows
+                    .map((row) {
+                      return DataRow(
+                        cells: [
+                          DataCell(
+                            Text('${row.tenantName}\n${row.tenantSlug}'),
+                          ),
+                          DataCell(
+                            Text(row.planCode.isEmpty ? '-' : row.planCode),
+                          ),
+                          DataCell(
+                            _StatusBadge(
+                              label: row.status,
+                              color: _statusColor(row.status),
+                            ),
+                          ),
+                          DataCell(Text(_formatDate(row.endsAt))),
+                          DataCell(
+                            Text(
+                              row.createdByName.isEmpty
+                                  ? (row.soldByName.isEmpty
+                                        ? '-'
+                                        : row.soldByName)
+                                  : row.createdByName,
+                            ),
+                          ),
+                          DataCell(Text(row.code.isEmpty ? '-' : row.code)),
+                        ],
+                      );
+                    })
+                    .toList(growable: false),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildTableWrapper({required Widget child, required double minWidth}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minWidth: minWidth),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  void _showCreatedOwnersDetails(_CreatedOwnersAgentRow row) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.8,
+          minChildSize: 0.45,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFF101022),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              row.name,
+                              style: const TextStyle(
+                                color: Color(0xFFF2F2FF),
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              row.email,
+                              style: const TextStyle(color: Color(0xFFBDBDD8)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _MetricCard(
+                        label: 'Owners',
+                        value: '${row.ownersCount}',
+                        icon: Icons.person_rounded,
+                      ),
+                      _MetricCard(
+                        label: 'Stores',
+                        value: '${row.storesCount}',
+                        icon: Icons.store_rounded,
+                      ),
+                      _MetricCard(
+                        label: 'Status',
+                        value: row.status,
+                        icon: Icons.verified_rounded,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Owners and stores',
+                    style: TextStyle(
+                      color: Color(0xFFF2F2FF),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ...row.owners.map(
+                    (owner) => Card(
+                      color: const Color(0xFF17172A),
+                      child: ExpansionTile(
+                        title: Text(
+                          owner.name,
+                          style: const TextStyle(
+                            color: Color(0xFFF2F2FF),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        subtitle: Text(
+                          owner.email,
+                          style: const TextStyle(color: Color(0xFFBDBDD8)),
+                        ),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Wrap(
+                                  spacing: 10,
+                                  runSpacing: 10,
+                                  children: [
+                                    _MiniChip(label: 'Status: ${owner.status}'),
+                                    _MiniChip(
+                                      label:
+                                          'Created: ${_formatDate(owner.createdAt)}',
+                                    ),
+                                    _MiniChip(
+                                      label: 'Stores: ${owner.stores.length}',
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                if (owner.stores.isEmpty)
+                                  const Text(
+                                    'No stores were created by this owner.',
+                                    style: TextStyle(color: Color(0xFF9D9DBC)),
+                                  )
+                                else
+                                  ...owner.stores.map(
+                                    (store) => ListTile(
+                                      dense: true,
+                                      contentPadding: EdgeInsets.zero,
+                                      leading: const Icon(
+                                        Icons.storefront_rounded,
+                                        color: Color(0xFF7B61FF),
+                                      ),
+                                      title: Text(
+                                        store.name,
+                                        style: const TextStyle(
+                                          color: Color(0xFFF2F2FF),
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        '${store.slug} • ${store.status}',
+                                        style: const TextStyle(
+                                          color: Color(0xFFBDBDD8),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+enum _ReportSection { all, createdOwners, revenue, subscriptions }
+
+extension on _ReportSection {
+  String get label {
+    return switch (this) {
+      _ReportSection.all => 'All Reports',
+      _ReportSection.createdOwners => 'Owners & Stores',
+      _ReportSection.revenue => 'Revenue',
+      _ReportSection.subscriptions => 'Subscriptions',
+    };
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.child,
+    this.accent,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Widget child;
+  final Color? accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = accent ?? const Color(0xFF2A2A48);
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF171725), Color(0xFF121223)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: borderColor.withOpacity(0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [borderColor, borderColor.withOpacity(0.8)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Color(0xFFF2F2FF),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(color: Color(0xFFBDBDD8)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 160),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF151528),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF2A2A48)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF7B61FF), Color(0xFF3A8DFF)],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Color(0xFF9D9DBC),
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: Color(0xFFF2F2FF),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SmallFilterDropdown extends StatelessWidget {
+  const _SmallFilterDropdown({
+    required this.label,
+    required this.value,
+    required this.values,
+    required this.onChanged,
+  });
+
+  final String label;
+  final int value;
+  final List<int> values;
+  final ValueChanged<int?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 170,
+      child: DropdownButtonFormField<int>(
+        value: value,
+        dropdownColor: const Color(0xFF12122A),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Color(0xFFA3A3C2)),
+          filled: true,
+          fillColor: const Color(0xFF161628).withOpacity(0.7),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+        ),
+        items: values
+            .map(
+              (item) =>
+                  DropdownMenuItem<int>(value: item, child: Text('$item')),
+            )
+            .toList(growable: false),
+        onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withOpacity(0.35)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyInlineState extends StatelessWidget {
+  const _EmptyInlineState({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        children: [
+          const Icon(Icons.inbox_rounded, size: 42, color: Color(0xFF7B61FF)),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xFFF2F2FF),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            message,
+            style: const TextStyle(color: Color(0xFFBDBDD8)),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniChip extends StatelessWidget {
+  const _MiniChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF17172A),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFF2A2A48)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(color: Color(0xFFBDBDD8), fontSize: 12),
+      ),
+    );
+  }
+}
+
+class _AgentOption {
+  const _AgentOption({
+    required this.id,
+    required this.name,
+    required this.email,
+  });
+
+  final int id;
+  final String name;
+  final String email;
+}
+
+class _CreatedOwnersAgentRow {
+  const _CreatedOwnersAgentRow({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.status,
+    required this.createdAt,
+    required this.ownersCount,
+    required this.storesCount,
+    required this.owners,
+  });
+
+  final int id;
+  final String name;
+  final String email;
+  final String status;
+  final String createdAt;
+  final int ownersCount;
+  final int storesCount;
+  final List<_OwnerSummary> owners;
+}
+
+class _OwnerSummary {
+  const _OwnerSummary({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.status,
+    required this.createdAt,
+    required this.stores,
+  });
+
+  final int id;
+  final String name;
+  final String email;
+  final String status;
+  final String createdAt;
+  final List<_StoreSummary> stores;
+}
+
+class _StoreSummary {
+  const _StoreSummary({
+    required this.id,
+    required this.name,
+    required this.slug,
+    required this.status,
+    required this.businessTypeId,
+    required this.createdAt,
+  });
+
+  final int id;
+  final String name;
+  final String slug;
+  final String status;
+  final int businessTypeId;
+  final String createdAt;
+}
+
+class _RevenueAgentRow {
+  const _RevenueAgentRow({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.totalSubscriptions,
+    required this.totalRevenue,
+    required this.performanceScore,
+  });
+
+  final int id;
+  final String name;
+  final String email;
+  final int totalSubscriptions;
+  final double totalRevenue;
+  final double? performanceScore;
+}
+
+class _SubscriptionRow {
+  const _SubscriptionRow({
+    required this.id,
+    required this.tenantName,
+    required this.tenantSlug,
+    required this.planCode,
+    required this.code,
+    required this.activationCode,
+    required this.status,
+    required this.startsAt,
+    required this.endsAt,
+    required this.createdAt,
+    required this.createdByName,
+    required this.soldByName,
+  });
+
+  final int id;
+  final String tenantName;
+  final String tenantSlug;
+  final String planCode;
+  final String code;
+  final String activationCode;
+  final String status;
+  final String startsAt;
+  final String endsAt;
+  final String createdAt;
+  final String createdByName;
+  final String soldByName;
+}
